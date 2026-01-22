@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "245896427791",
+    "project_id": "govigyaan-da2c0",
+    "storage_bucket": "govigyaan-da2c0.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:245896427791:android:d01b3c34bf980f939ea67a",
+        "android_client_info": {
+          "package_name": "com.exam.roadsafetyquizapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA3bx6cih8dsyY0ZTmx_NGSk8Ps34CkD44"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
