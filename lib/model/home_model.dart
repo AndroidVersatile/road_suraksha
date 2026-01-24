@@ -142,8 +142,7 @@ class OtherNewsModel {
     "AudioURl": audioURl,
     "VideoFile": videoFile,
   };
-}
-class UserModel {
+}class UserModel {
   String dob;
   String subjectName;
   String courseName;
@@ -188,8 +187,10 @@ class UserModel {
   String nReg;
   String language;
   String utrNo;
-  String? districtId;    // ✅ Added
-  String? blockId;       // ✅ Added
+  String? districtId;      // ✅ District ID
+  String? districtName;    // ✅ District Name
+  String? blockId;         // ✅ Block ID
+  String? blockName;       // ✅ Block Name
 
   UserModel({
     required this.dob,
@@ -236,8 +237,10 @@ class UserModel {
     required this.nReg,
     required this.language,
     required this.utrNo,
-    this.districtId,       // ✅ Added
-    this.blockId,          // ✅ Added
+    this.districtId,       // ✅ Optional
+    this.districtName,     // ✅ Optional
+    this.blockId,          // ✅ Optional
+    this.blockName,        // ✅ Optional
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
@@ -285,8 +288,10 @@ class UserModel {
     nReg: json["NReg"] ?? '',
     language: json["Language"] ?? '',
     utrNo: json["UTRNo"] ?? '',
-    districtId: json["DistrictId"]?.toString(),    // ✅ Added
-    blockId: json["BlockId"]?.toString(),          // ✅ Added
+    districtId: json["DistrictId"]?.toString(),        // ✅ Parse ID
+    districtName: json["District"]?.toString(),    // ✅ Parse Name
+    blockId: json["BlockId"]?.toString(),              // ✅ Parse ID
+    blockName: json["BlockName"]?.toString(),          // ✅ Parse Name
   );
 
   Map<String, dynamic> toJson() => {
@@ -334,7 +339,11 @@ class UserModel {
     "NReg": nReg,
     "Language": language,
     "UTRNo": utrNo,
-    if (districtId != null) "DistrictId": districtId,    // ✅ Added
-    if (blockId != null) "BlockId": blockId,              // ✅ Added
+    if (districtId != null) "DistrictId": districtId,        // ✅ Include if not null
+    if (districtName != null) "District": districtName, 
+    
+     // ✅ Include if not null
+    if (blockId != null) "BlockId": blockId,                  // ✅ Include if not null
+    if (blockName != null) "BlockName": blockName,            // ✅ Include if not null
   };
 }

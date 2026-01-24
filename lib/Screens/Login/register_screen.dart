@@ -27,7 +27,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String _selectedLanguage = 'H';
   String _selectedCategory = 'C';
   String _selectedGender = 'M';
-
+  String? selectedBlockName; // ✅ ADD THIS
+  String? selectedDistrictName; // ✅ ADD THIS
   String name = '';
   String fName = '';
   DateTime dob = DateTime.now();
@@ -340,72 +341,118 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 AppTheme.verticalSpacing(),
 
                 // ✅ DISTRICT DROPDOWN
-                CustomDropDownButton(
-                  label: 'ज़िला चुनें *',
-                  items:
-                      provider.districtList.map((e) => e.districtName).toList(),
-                  initialSelection: '',
-                  onSelect: (value) {
-                    setState(() {
-                      districtError = null;
-                    });
+            // ✅ DISTRICT DROPDOWN - Update onSelect
+CustomDropDownButton(
+  label: 'ज़िला चुनें *',
+  items: provider.districtList.map((e) => e.districtName).toList(),
+  initialSelection: '',
+  onSelect: (value) {
+    setState(() {
+      districtError = null;
+    });
 
-                    print("🟢 District selected: $value");
+    print("🟢 District selected: $value");
 
-                    try {
-                      final district = provider.districtList
-                          .firstWhere((e) => e.districtName == value);
+    try {
+      final district = provider.districtList
+          .firstWhere((e) => e.districtName == value);
 
-                      provider.selectedDistrictId = district.districtId;
-                      provider.selectedBlockId = ''; // ✅ Reset block
-                      provider.getBlockList(district.districtId);
+      provider.selectedDistrictId = district.districtId;
+      provider.selectedDistrictName = district.districtName; // ✅ ADD THIS LINE
+      provider.selectedBlockId = ''; // ✅ Reset block
+      provider.getBlockList(district.districtId);
 
-                      setState(() {});
-                    } catch (e) {
-                      print("❌ District selection error: $e");
-                    }
-                  },
-                ),
-                if (districtError != null)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 12.0, top: 4.0),
-                    child: Text(
-                      districtError!,
-                      style: const TextStyle(color: Colors.red, fontSize: 12),
-                    ),
-                  ),
+      setState(() {});
+    } catch (e) {
+      print("❌ District selection error: $e");
+    }
+  },
+),
                 AppTheme.verticalSpacing(),
 
                 // ✅ BLOCK DROPDOWN
-                CustomDropDownButton(
-                  label: 'ब्लॉक चुनें *',
-                  items: provider.blockList.map((e) => e.blockName).toList(),
-                  initialSelection: '',
-                  onSelect: (value) {
-                    setState(() {
-                      blockError = null;
-                    });
+                // CustomDropDownButton(
+                //   label: 'ब्लॉक चुनें *',
+                //   items: provider.blockList.map((e) => e.blockName).toList(),
+                //   initialSelection: '',
+                //   onSelect: (value) {
+                //     setState(() {
+                //       blockError = null;
+                //     });
 
-                    try {
-                      final block = provider.blockList
-                          .firstWhere((e) => e.blockName == value);
+                //     try {
+                //       final block = provider.blockList
+                //           .firstWhere((e) => e.blockName == value);
 
-                      provider.selectedBlockId = block.blockId;
+                //       provider.selectedBlockId = block.blockId;
 
-                      setState(() {});
-                    } catch (e) {
-                      print("❌ Block selection error: $e");
-                    }
-                  },
-                ),
-                if (blockError != null)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 12.0, top: 4.0),
-                    child: Text(
-                      blockError!,
-                      style: const TextStyle(color: Colors.red, fontSize: 12),
-                    ),
-                  ),
+                //       setState(() {});
+                //     } catch (e) {
+                //       print("❌ Block selection error: $e");
+                //     }
+                //   },
+                // ),
+                // if (blockError != null)
+                //   Padding(
+                //     padding: const EdgeInsets.only(left: 12.0, top: 4.0),
+                //     child: Text(
+                //       blockError!,
+                //       style: const TextStyle(color: Colors.red, fontSize: 12),
+                //     ),
+                //   ),
+                // ✅ BLOCK DROPDOWN - Proper implementation
+if (provider.selectedDistrictId.isEmpty)
+  // Show disabled state
+  Container(
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    decoration: BoxDecoration(
+      color: Colors.grey[200],
+      borderRadius: BorderRadius.circular(AppTheme.radius),
+      border: Border.all(color: Colors.grey[300]!),
+    ),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          'पहले ज़िला चुनें',
+          style: TextStyle(color: Colors.grey[600]),
+        ),
+        Icon(Icons.lock_outline, color: Colors.grey[400], size: 18),
+      ],
+    ),
+  )
+else if (provider.loading)
+  // Show loading
+  const Center(
+    child: Padding(
+      padding: EdgeInsets.all(16.0),
+      child: CircularProgressIndicator(),
+    ),
+  )
+else
+  // Show dropdown
+   CustomDropDownButton(
+    label: 'ब्लॉक चुनें *',
+    items: provider.blockList.map((e) => e.blockName).toList(),
+    initialSelection: '',
+    onSelect: (value) {
+      setState(() {
+        blockError = null;
+      });
+
+      try {
+        final block = provider.blockList
+            .firstWhere((e) => e.blockName == value);
+
+        provider.selectedBlockId = block.blockId;
+        selectedBlockName = block.blockName; // ✅ ADD THIS
+        
+        setState(() {});
+      } catch (e) {
+        print("❌ Block selection error: $e");
+      }
+    },
+  ),
                 AppTheme.verticalSpacing(),
 
                 // Complete Address
@@ -508,7 +555,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         districtId:
                             provider.selectedDistrictId, // ✅ MUST NOT be empty
                         blockId:
-                            provider.selectedBlockId, // ✅ MUST NOT be empty
+                            provider.selectedBlockId,
+                              blockName: selectedBlockName ?? '', // ✅ ADD THIS
+  districtName: provider.selectedDistrictName, // ✅ ADD THIS LINE
+
                         address: address,
                         pinCode: pinCode,
                         language: _selectedLanguage,

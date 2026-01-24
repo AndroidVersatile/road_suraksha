@@ -535,6 +535,8 @@ class _LiveCertificateScreenState extends State<LiveCertificateScreen> {
     required String rank,
     required String certificateMsg,
     required String rtsDate, // formatted date
+     required String districtName,  // ✅ ADD
+  required String blockName,     // ✅ ADD
   }) async {
     loading = true;
     setState(() {});
@@ -554,7 +556,7 @@ class _LiveCertificateScreenState extends State<LiveCertificateScreen> {
             bgImage,
             // Name
             pw.Positioned(
-              top: 204,
+              top: 190,
               left: 155,
               child: pw.Text(
                 name,
@@ -564,22 +566,46 @@ class _LiveCertificateScreenState extends State<LiveCertificateScreen> {
                 ),
               ),
             ),
-            // Address
-            pw.Positioned(
-              top: 360,
-              left: 80,
-              child: pw.Text(
-                rtsDate,
-                style: pw.TextStyle(
-                  fontWeight: pw.FontWeight.bold,
-                  fontSize: 12,
-                ),
+               pw.Positioned(
+            top: 210,
+            left: 155,
+            child: pw.Text(
+              districtName,
+              style: pw.TextStyle(
+                fontWeight: pw.FontWeight.bold,
+                fontSize: 12,
               ),
             ),
+          ),
+          
+          // ✅ Block (PDF)
+          pw.Positioned(
+            top: 210,
+            left: 100,
+            child: pw.Text(
+              blockName,
+              style: pw.TextStyle(
+                fontWeight: pw.FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
+          ),
+            // Address
+            // pw.Positioned(
+            //   top: 360,
+            //   left: 80,
+            //   child: pw.Text(
+            //     rtsDate,
+            //     style: pw.TextStyle(
+            //       fontWeight: pw.FontWeight.bold,
+            //       fontSize: 12,
+            //     ),
+            //   ),
+            // ),
             // Rank
             pw.Positioned(
               top: 256,
-              left: 450,
+              left: 300,
               child: pw.Text(
                 rank,
                 style: pw.TextStyle(
@@ -643,7 +669,8 @@ class _LiveCertificateScreenState extends State<LiveCertificateScreen> {
   Widget build(BuildContext context) {
     var provider = Provider.of<HomeProvider>(context);
     var percentage = provider.resultExamDetail.first.persantage;
-
+      String districtName = provider.userModel?.districtName ?? 'N/A';
+    String blockName = provider.userModel?.blockName ?? 'N/A';
     // Calculate rank and certificate message
     String certificateMsg = '';
     String rank = '';
@@ -701,7 +728,7 @@ class _LiveCertificateScreenState extends State<LiveCertificateScreen> {
                   fit: BoxFit.contain,
                 ),
                 Positioned(
-                  top: 295,
+                  top: 285,
                   left: 100,
                   child: Text(
                     '${provider.userModel?.studentName}',
@@ -722,9 +749,33 @@ class _LiveCertificateScreenState extends State<LiveCertificateScreen> {
                 //         fontSize: 9),
                 //   ),
                 // ),
+
+                      Positioned(
+                  top: 300,
+                  left: 126,
+                  child: Text(
+                    ' $districtName',
+                    style: context.textTheme.labelLarge?.copyWith(
+                        color: Colors.orange,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 8),
+                  ),
+                ),
+                // ✅ Block (Preview)
+                Positioned(
+                  top: 300,
+                  left: 50,
+                  child: Text(
+                    ' $blockName',
+                    style: context.textTheme.labelLarge?.copyWith(
+                        color: Colors.orange,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 8),
+                  ),
+                ),
                 Positioned(
                   top: 333,
-                  right: 95,
+                  left:110,
                   child: Text(
                     rank, // Show rank instead of percentage
                     style: context.textTheme.labelLarge?.copyWith(
@@ -744,7 +795,7 @@ class _LiveCertificateScreenState extends State<LiveCertificateScreen> {
                   ),
                 ),
                 Positioned(
-                  top: 397,
+                  top: 402,
                   left: 50,
                   child: Text(
                     formattedDate,
@@ -754,17 +805,17 @@ class _LiveCertificateScreenState extends State<LiveCertificateScreen> {
                         fontSize: 9),
                   ),
                 ),
-                Positioned(
-                  top: 408,
-                  left: 50,
-                  child: Text(
-                    '${provider.userModel?.address}',
-                    style: context.textTheme.labelLarge?.copyWith(
-                        color: Colors.orange,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 9),
-                  ),
-                ),
+                // Positioned(
+                //   top: 408,
+                //   left: 50,
+                //   child: Text(
+                //     '${provider.userModel?.address}',
+                //     style: context.textTheme.labelLarge?.copyWith(
+                //         color: Colors.orange,
+                //         fontWeight: FontWeight.w700,
+                //         fontSize: 9),
+                //   ),
+                // ),
               ],
             ),
           ),
@@ -793,6 +844,8 @@ class _LiveCertificateScreenState extends State<LiveCertificateScreen> {
                   rank: rank,
                   certificateMsg: certificateMsg,
                   rtsDate: formattedDate,
+                  districtName: districtName, // ✅ ADD
+  blockName: blockName,     // ✅ ADD
                 );
               },
               text: 'Download Certificate',

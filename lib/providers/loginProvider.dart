@@ -24,6 +24,8 @@ class LoginProvider extends ChangeNotifier {
   List<StateModel> stateList = List.empty(growable: true);
   List<DistrictModel> districtList = [];
   List<BlockModel> blockList = [];
+  String selectedBlockName = ''; // ✅ ADD THIS
+  String selectedDistrictName = ''; // ✅ ADD THIS LINE
 
   String selectedStateId = '';
   String selectedDistrictId = '';
@@ -326,6 +328,8 @@ Future<dynamic> register({
   required String city,
   required String districtId,
   required String blockId,
+    required String blockName, required String districtName, // ✅ ADD THIS
+
 }) async {
   loading = true;
   notifyListeners();
@@ -350,10 +354,14 @@ Future<dynamic> register({
       "CollegeName": base64.encode(utf8.encode(schoolName)),
       "StateID": state,
       "DistrictId": districtId, // ✅ Must not be empty
-      "BlockId": blockId, // ✅ Must not be empty
+      "BlockId": blockId,
+            "BlockName": blockName, // ✅ ADD THIS
+      "District": base64.encode(utf8.encode(districtName)), // ✅ CHANGE THIS - pehle city tha
+
+
       "FieldID": '0',
       "PrantID": '0',
-      "District": base64.encode(utf8.encode(city)),
+      // "District": base64.encode(utf8.encode(city)),
       "Address": base64.encode(utf8.encode(address)),
       "Pincode": pinCode,
       "PrmotersName": base64.encode(utf8.encode(name)),
@@ -538,6 +546,8 @@ Future<dynamic> register({
     required String city,
       String? districtId,  // ✅ Add karo (optional because update)
   String? blockId,     
+  String? districtName, // ✅ ADD THIS
+  String? blockName,  
   }) async {
     loading = true;
     notifyListeners();
@@ -566,6 +576,8 @@ Future<dynamic> register({
       "Password": '',
       "Language": language,
       "city": city,
+          if (blockName != null) "BlockName": blockName, // ✅ ADD THIS
+  if (districtName != null) "District": districtName, // ✅ ADD THIS LINE
     };
     print(userData);
     final response = await _apiClient.dio.get(

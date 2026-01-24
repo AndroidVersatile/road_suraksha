@@ -310,80 +310,148 @@ class LiveQuiz extends StatelessWidget {
           }).toList(),
           if (questionIndex ==
               context.read<HomeProvider>().demoQuestionList.length - 1)
-            CustomElevatedBtn(
-              onPressed: () async {
-                String questionList = "";
-                // Assuming we are using a list of maps to represent exam questions
-                for (int j = 0; j < questions.length; j++) {
-                  var question = questions[j];
-                  String asd =
-                  question.questionAnswer.trim().replaceAll("'", "''");
-                  // Create the SQL insert statement
-                  questionDetail =
-                  """insert into M_EmployeeAttempedQuestions(
-                  
-    EmpID, Subject, Exam, QuestionID, Question, OptionA, OptionB, OptionC, OptionD, OptionE, OptionF,
-    QuestionAnswer, QuestionAttemptedAnswer, QuestionDisplayTime, QuestionMarks, IsSeen, QImage, AImage,
-    BImage, CImage, DImage, EImage, FImage, isImage, ExamDetail, NagetiveMarks)
-  select ${question.studentId},
-    ${question.subject},
-   ${question.exam},
-    ${question.questionId},
-    N'${question.question.trim().replaceAll("'", "''")}',
-    N'${question.optionA.trim().replaceAll("'", "''")}',
-    N'${question.optionB.trim().replaceAll("'", "''")}',
-    N'${question.optionC.trim().replaceAll("'", "''")}',
-    N'${question.optionD.trim().replaceAll("'", "''")}',
-    N'${question.optionE.trim().replaceAll("'", "''")}',
-    N'${question.optionF.trim().replaceAll("'", "''")}',
-    '${question.questionAnswer}',
-    '${question.questionAttemptedAnswerDemo.trim().replaceAll("'", "''")}',
-    ${35 - timeLeft},
-    ${question.questionMarks.trim().replaceAll("'", "''")},
-    'N',
-    'http://rajsadaksuraksha.versatileitsolution.com/QuestionImages/${question.qImage.trim().replaceAll("'", "''")}',
-    'http://rajsadaksuraksha.versatileitsolution.com/QuestionImages/${question.aImage.trim().replaceAll("'", "''")}',
-    'http://rajsadaksuraksha.versatileitsolution.com/QuestionImages/${question.bImage.trim().replaceAll("'", "''")}',
-    'http://rajsadaksuraksha.versatileitsolution.com/QuestionImages/${question.cImage.trim().replaceAll("'", "''")}',
-    'http://rajsadaksuraksha.versatileitsolution.com/QuestionImages/${question.dImage.trim().replaceAll("'", "''")}',
-    'http://rajsadaksuraksha.versatileitsolution.com/QuestionImages/${question.eImage.trim().replaceAll("'", "''")}',
-    'http://rajsadaksuraksha.versatileitsolution.com/QuestionImages/${question.fImage.trim().replaceAll("'", "''")}',
-    '${question.isImage.trim().replaceAll("'", "''")}',
-    '${question.refNo.trim().replaceAll("'", "''")}',
-    '0';
-  """;
+      if (questionIndex == context.read<HomeProvider>().demoQuestionList.length - 1)
+  CustomElevatedBtn(
+    onPressed: () async {
+      // Pehle check karo ki already loading state mein toh nahi hai
+      if (!context.mounted) return;
+      
+      try {
+        // Loading indicator dikhao
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => WillPopScope(
+            onWillPop: () async => false,
+            child: const Center(
+              child: CircularProgressIndicator(),
+            ),
+          ),
+        );
 
-                  print("QuestionDetail: $questionDetail");
-                  questionList += questionDetail;
-                }
-                print(questionList);
-                var questionData =
-                    "UPDATE M_EmployeeAttempedQuestions set ActiveStatus='N' where Subject=" +
-                        '${questions[questionIndex].subject}' +
-                        " and Exam=" +
-                        '${questions[questionIndex].exam}' +
-                        " and EmpID=" +
-                        '${questions[questionIndex].studentId}' +
-                        ";";
-                print("QuestionData: $questionData");
-                var res = await context.read<HomeProvider>().submitLiveQuiz(
-                    refNo: questions[questionIndex].refNo,
-                    examId: questions[questionIndex].exam,
-                    questionDetail: questionData + questionList);
-                if (res == 200) {
-                  context.pushNamed(
-                    AppPages.liveResult,
-                    // Assuming AppPages.result is the name of the result page
-                    pathParameters: {
-                      "score": totalScore.toString(),
-                      // Passing the total score to result page
-                    },
-                  );
-                }
+        String questionList = "";
+        
+        for (int j = 0; j < questions.length; j++) {
+          var question = questions[j];
+          
+          questionDetail = """insert into M_EmployeeAttempedQuestions(
+            EmpID, Subject, Exam, QuestionID, Question, OptionA, OptionB, OptionC, OptionD, OptionE, OptionF,
+            QuestionAnswer, QuestionAttemptedAnswer, QuestionDisplayTime, QuestionMarks, IsSeen, QImage, AImage,
+            BImage, CImage, DImage, EImage, FImage, isImage, ExamDetail, NagetiveMarks)
+          select ${question.studentId},
+            ${question.subject},
+            ${question.exam},
+            ${question.questionId},
+            N'${question.question.trim().replaceAll("'", "''")}',
+            N'${question.optionA.trim().replaceAll("'", "''")}',
+            N'${question.optionB.trim().replaceAll("'", "''")}',
+            N'${question.optionC.trim().replaceAll("'", "''")}',
+            N'${question.optionD.trim().replaceAll("'", "''")}',
+            N'${question.optionE.trim().replaceAll("'", "''")}',
+            N'${question.optionF.trim().replaceAll("'", "''")}',
+            '${question.questionAnswer}',
+            '${question.questionAttemptedAnswerDemo.trim().replaceAll("'", "''")}',
+            ${35 - timeLeft},
+            ${question.questionMarks.trim().replaceAll("'", "''")},
+            'N',
+            'http://rajsadaksuraksha.versatileitsolution.com/QuestionImages/${question.qImage.trim().replaceAll("'", "''")}',
+            'http://rajsadaksuraksha.versatileitsolution.com/QuestionImages/${question.aImage.trim().replaceAll("'", "''")}',
+            'http://rajsadaksuraksha.versatileitsolution.com/QuestionImages/${question.bImage.trim().replaceAll("'", "''")}',
+            'http://rajsadaksuraksha.versatileitsolution.com/QuestionImages/${question.cImage.trim().replaceAll("'", "''")}',
+            'http://rajsadaksuraksha.versatileitsolution.com/QuestionImages/${question.dImage.trim().replaceAll("'", "''")}',
+            'http://rajsadaksuraksha.versatileitsolution.com/QuestionImages/${question.eImage.trim().replaceAll("'", "''")}',
+            'http://rajsadaksuraksha.versatileitsolution.com/QuestionImages/${question.fImage.trim().replaceAll("'", "''")}',
+            '${question.isImage.trim().replaceAll("'", "''")}',
+            '${question.refNo.trim().replaceAll("'", "''")}',
+            '0';
+          """;
+
+          questionList += questionDetail;
+        }
+
+        var questionData = "UPDATE M_EmployeeAttempedQuestions set ActiveStatus='N' where Subject=" +
+            '${questions[questionIndex].subject}' +
+            " and Exam=" +
+            '${questions[questionIndex].exam}' +
+            " and EmpID=" +
+            '${questions[questionIndex].studentId}' +
+            ";";
+
+        print("Total query length: ${(questionData + questionList).length}");
+
+        var res = await context.read<HomeProvider>().submitLiveQuiz(
+          refNo: questions[questionIndex].refNo,
+          examId: questions[questionIndex].exam,
+          questionDetail: questionData + questionList,
+        ).timeout(
+          const Duration(seconds: 30),
+          onTimeout: () {
+            throw TimeoutException('Server response timeout. Please check your internet connection.');
+          },
+        );
+
+        // Dialog close karo agar context available hai
+        if (context.mounted) {
+          Navigator.of(context).pop(); // Loading dialog band karo
+        }
+
+        // Response check karo
+        if (res == 200) {
+          if (context.mounted) {
+            context.pushNamed(
+              AppPages.liveResult,
+              pathParameters: {
+                "score": totalScore.toString(),
               },
-              text: 'Submit',
-            )
-
+            );
+          }
+        } else {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Submission failed (Status: $res). Please try again.'),
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          }
+        }
+      } on TimeoutException catch (e) {
+        // Loading dialog band karo
+        if (context.mounted) {
+          Navigator.of(context).pop();
+        }
+        
+        print("Timeout error: $e");
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Request timeout. Please check your internet and try again.'),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+      } catch (e) {
+        // Loading dialog band karo
+        if (context.mounted) {
+          Navigator.of(context).pop();
+        }
+        
+        print("Error submitting quiz: $e");
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: ${e.toString()}'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      }
+    },
+    text: 'Submit',
+  )
             // CustomElevatedBtn(
             //   onPressed: timeLeft == 0
             //       ? () {}

@@ -13,8 +13,7 @@ class Assets {
   static const demoExam = 'assets/demoExam.png';
   static const feedback = 'assets/feedback.png';
   static const congrats = 'assets/congrats.json';
-  static const certificate = 'assets/certificate.jpg';
+  static const certificate = 'assets/certificate_road.jpg';
   static const noData = 'assets/certification.png';
-    static const roadbanner = 'assets/road_banner.jpeg';
-
+  static const roadbanner = 'assets/road_banner.jpeg';
 }

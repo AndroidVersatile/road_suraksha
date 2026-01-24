@@ -162,7 +162,7 @@ class BlockModel {
   factory BlockModel.fromJson(Map<String, dynamic> json) {
     return BlockModel(
       blockId: json['BlockId'].toString(),
-      blockName: json['BlockName'],
+      blockName: json['BlockName'].toString()
     );
   }
 }
