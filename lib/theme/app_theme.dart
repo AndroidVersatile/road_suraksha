@@ -128,7 +128,7 @@ class AppTheme extends ChangeNotifier {
           backgroundColor: const Color(0xffFFA37B),
           contentTextStyle: _textTheme.titleMedium!.apply(color: Colors.black),
         ),
-        tabBarTheme: TabBarTheme(
+        tabBarTheme: TabBarThemeData(
           indicatorSize: TabBarIndicatorSize.label,
           labelColor: colorScheme.primary,
           indicator: UnderlineTabIndicator(
@@ -192,7 +192,7 @@ class AppTheme extends ChangeNotifier {
           shape: shape,
           textStyle: _textTheme.titleSmall,
         ),
-        cardTheme: CardTheme(
+        cardTheme: CardThemeData(
           color: Colors.white,
           shape: shape.copyWith(
             side: BorderSide(
@@ -203,7 +203,7 @@ class AppTheme extends ChangeNotifier {
           // color: Colors.white,
           elevation: 0,
         ),
-        dialogTheme: DialogTheme(shape: shape, elevation: 2),
+        dialogTheme: DialogThemeData(shape: shape, elevation: 2),
         visualDensity: VisualDensity.adaptivePlatformDensity,
         textTheme: _textTheme,
         useMaterial3: true,

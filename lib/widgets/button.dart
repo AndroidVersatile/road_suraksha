@@ -214,64 +214,64 @@ class CustomOutlinedBtn extends StatelessWidget {
       ),
     );
   }
-}
-
-class CustomDropDownButton extends StatefulWidget {
-  const CustomDropDownButton(
-      {required this.items,
-      required this.label,
-      required this.onSelect,
-      this.initialSelection,
-      this.fillColor,
-      super.key});
+}class CustomDropDownButton extends StatelessWidget {
+  const CustomDropDownButton({
+    super.key,
+    required this.items,
+    required this.label,
+    required this.onSelect,
+    required this.initialSelection, // ✅ Make it required
+    this.selectedValue, // ✅ Keep for dynamic updates
+    this.fillColor,
+  });
 
   final List<String> items;
   final String label;
-  final String? initialSelection;
+  final String initialSelection; // ✅ First time selection
+  final String? selectedValue; // ✅ Dynamic selection (for updates)
   final Color? fillColor;
-  final void Function(String date) onSelect;
+  final void Function(String value) onSelect;
 
-  @override
-  State<CustomDropDownButton> createState() => _CustomDropDownButtonState();
-}
-
-class _CustomDropDownButtonState extends State<CustomDropDownButton> {
   @override
   Widget build(BuildContext context) {
+    // ✅ selectedValue ko priority do, agar null hai to initialSelection use karo
+    final String? effectiveValue = selectedValue?.isNotEmpty == true 
+        ? selectedValue 
+        : (initialSelection.isNotEmpty ? initialSelection : null);
+
     return DropdownMenu<String>(
-      key: widget.key,
+      key: ValueKey(effectiveValue), // 🔥 IMPORTANT - rebuilds when value changes
       width: context.screenWidth - 20,
       menuHeight: 300,
+
+      initialSelection: effectiveValue, // ✅ Use effective value
+
       onSelected: (value) {
-        widget.onSelect(value!);
-        setState(() {});
+        if (value != null) {
+          onSelect(value);
+        }
       },
+
+      dropdownMenuEntries: items
+          .map(
+            (e) => DropdownMenuEntry<String>(
+              value: e,
+              label: e,
+            ),
+          )
+          .toList(),
+
+      label: Text(label),
+
       inputDecorationTheme: InputDecorationTheme(
-          isDense: true,
-          suffixIconColor: Color(0xFF8189B0),
-          labelStyle: context.textTheme.labelMedium?.copyWith(
-            color: Color(0xFF8189B0),
-          ),
-          filled: true,
-          enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(
-                color: Colors.white,
-              ),
-              borderRadius: BorderRadius.circular(AppTheme.radius)),
-          fillColor: widget.fillColor ?? Colors.white,
-          outlineBorder: BorderSide.none,
-          border: OutlineInputBorder(
-              borderSide: BorderSide.none,
-              borderRadius: BorderRadius.circular(AppTheme.radius))),
-      dropdownMenuEntries:
-          widget.items.map<DropdownMenuEntry<String>>((String value) {
-        return DropdownMenuEntry<String>(
-          value: value,
-          label: value,
-        );
-      }).toList(),
-      label: Text(widget.label),
-      initialSelection: widget.initialSelection,
+        isDense: true,
+        filled: true,
+        fillColor: fillColor ?? Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radius),
+          borderSide: BorderSide.none,
+        ),
+      ),
     );
   }
 }

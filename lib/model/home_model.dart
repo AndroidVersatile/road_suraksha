@@ -143,8 +143,6 @@ class OtherNewsModel {
     "VideoFile": videoFile,
   };
 }
-
-
 class UserModel {
   String dob;
   String subjectName;
@@ -190,6 +188,8 @@ class UserModel {
   String nReg;
   String language;
   String utrNo;
+  String? districtId;    // ✅ Added
+  String? blockId;       // ✅ Added
 
   UserModel({
     required this.dob,
@@ -236,53 +236,57 @@ class UserModel {
     required this.nReg,
     required this.language,
     required this.utrNo,
+    this.districtId,       // ✅ Added
+    this.blockId,          // ✅ Added
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
-    dob: json["DOB"],
-    subjectName: json["SubjectName"],
-    courseName: json["CourseName"],
-    id: json["ID"],
-    studentName: json["StudentName"],
-    mobile: json["Mobile"],
-    email: json["Email"],
-    passw: json["Passw"],
-    memberType: json["MemberType"],
-    activeStatus: json["ActiveStatus"],
-    isDel: json["isDel"],
-    rts: json["RTS"],
-    deviceId: json["DeviceID"],
-    firebase: json["Firebase"],
-    ipAddress: json["IpAddress"],
-    lmUserId: json["LMUserID"],
-    lmUserName: json["LMUserName"],
-    lmRemarks: json["LMRemarks"],
-    course: json["Course"],
-    subject: json["Subject"],
-    lastLogin: json["LastLogin"],
-    schoolName: json["SchoolName"],
-    fatherName: json["FatherName"],
-    fatherBusiness: json["FatherBusiness"],
-    address: json["Address"],
-    post: json["Post"],
-    tehsil: json["Tehsil"],
-    district: json["District"],
-    state: json["State"],
-    pincode: json["Pincode"],
-    status: json["Status"],
-    whatsappNo: json["WhatsappNo"],
-    dob1: json["DOB1"],
-    city: json["City"],
-    category: json["Category"],
-    citizen: json["Citizen"],
-    collegeName: json["CollegeName"],
-    fieldId: json["FieldID"],
-    prantId: json["PrantID"],
-    prmotersName: json["PrmotersName"],
-    prmotersMobileNo: json["PrmotersMobileNo"],
-    nReg: json["NReg"],
-    language: json["Language"],
-    utrNo: json["UTRNo"],
+    dob: json["DOB"] ?? '',
+    subjectName: json["SubjectName"] ?? '',
+    courseName: json["CourseName"] ?? '',
+    id: json["ID"] ?? '',
+    studentName: json["StudentName"] ?? '',
+    mobile: json["Mobile"] ?? '',
+    email: json["Email"] ?? '',
+    passw: json["Passw"] ?? '',
+    memberType: json["MemberType"] ?? '',
+    activeStatus: json["ActiveStatus"] ?? '',
+    isDel: json["isDel"] ?? '',
+    rts: json["RTS"] ?? '',
+    deviceId: json["DeviceID"] ?? '',
+    firebase: json["Firebase"] ?? '',
+    ipAddress: json["IpAddress"] ?? '',
+    lmUserId: json["LMUserID"] ?? '',
+    lmUserName: json["LMUserName"] ?? '',
+    lmRemarks: json["LMRemarks"] ?? '',
+    course: json["Course"] ?? '',
+    subject: json["Subject"] ?? '',
+    lastLogin: json["LastLogin"] ?? '',
+    schoolName: json["SchoolName"] ?? '',
+    fatherName: json["FatherName"] ?? '',
+    fatherBusiness: json["FatherBusiness"] ?? '',
+    address: json["Address"] ?? '',
+    post: json["Post"] ?? '',
+    tehsil: json["Tehsil"] ?? '',
+    district: json["District"] ?? '',
+    state: json["State"] ?? '',
+    pincode: json["Pincode"] ?? '',
+    status: json["Status"] ?? '',
+    whatsappNo: json["WhatsappNo"] ?? '',
+    dob1: json["DOB1"] ?? '',
+    city: json["City"] ?? '',
+    category: json["Category"] ?? '',
+    citizen: json["Citizen"] ?? '',
+    collegeName: json["CollegeName"] ?? '',
+    fieldId: json["FieldID"] ?? '',
+    prantId: json["PrantID"] ?? '',
+    prmotersName: json["PrmotersName"] ?? '',
+    prmotersMobileNo: json["PrmotersMobileNo"] ?? '',
+    nReg: json["NReg"] ?? '',
+    language: json["Language"] ?? '',
+    utrNo: json["UTRNo"] ?? '',
+    districtId: json["DistrictId"]?.toString(),    // ✅ Added
+    blockId: json["BlockId"]?.toString(),          // ✅ Added
   );
 
   Map<String, dynamic> toJson() => {
@@ -330,5 +334,7 @@ class UserModel {
     "NReg": nReg,
     "Language": language,
     "UTRNo": utrNo,
+    if (districtId != null) "DistrictId": districtId,    // ✅ Added
+    if (blockId != null) "BlockId": blockId,              // ✅ Added
   };
 }

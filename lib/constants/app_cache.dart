@@ -35,7 +35,26 @@ class AppCache {
       isInit = true;
     });
   }
+// In app_cache.dart
+Future<void> setDistrictId(String districtId) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString('districtId', districtId);
+}
 
+Future<String> getDistrictId() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getString('districtId') ?? '';
+}
+
+Future<void> setBlockId(String blockId) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString('blockId', blockId);
+}
+
+Future<String> getBlockId() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getString('blockId') ?? '';
+}
   isUserLoggedIn() {
     return _prefs?.getBool(isLogin) ?? false;
   }

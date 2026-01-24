@@ -46,45 +46,94 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // String address = '';
   // String pinCode = '';
 
-  @override
-  void initState() {
-    // TODO: implement initState
-    WidgetsBinding.instance.addPostFrameCallback(
-      (timeStamp) async {
-        await context.read<LoginProvider>().getUserDetails();
-        await context.read<LoginProvider>().getStateList();
-        context.read<LoginProvider>().getClassList();
-        stateCode = context.read<HomeProvider>().userModel!.state;
-        var data = context
-            .read<LoginProvider>()
-            .stateList
+  String? stateError;
+  String? districtError;
+  String? blockError;
+  
+@override
+void initState() {
+  WidgetsBinding.instance.addPostFrameCallback(
+    (timeStamp) async {
+      final loginProvider = context.read<LoginProvider>();
+
+      // ✅ First load from cache
+      String cachedDistrictId = await loginProvider.cache.getDistrictId();
+      String cachedBlockId = await loginProvider.cache.getBlockId();
+
+      if (cachedDistrictId.isNotEmpty && cachedDistrictId != '0') {
+        loginProvider.selectedDistrictId = cachedDistrictId;
+        print("📦 Loaded DistrictId from cache: $cachedDistrictId");
+      }
+
+      if (cachedBlockId.isNotEmpty && cachedBlockId != '0') {
+        loginProvider.selectedBlockId = cachedBlockId;
+        print("📦 Loaded BlockId from cache: $cachedBlockId");
+      }
+
+      // ✅ Fetch user details and lists
+      await loginProvider.getUserDetails();
+      await loginProvider.getStateList();
+      await loginProvider.getClassList();
+
+      final user = loginProvider.userModel;
+
+      if (user != null) {
+        // ✅ Set State
+        stateCode = user.state;
+        var stateData = loginProvider.stateList
             .where((element) => element.stateId.contains(stateCode))
-            .map((e) => e)
             .toList();
-        stateName = data.first.stateName;
-        classCode = context.read<HomeProvider>().userModel!.course;
-        var subName =   context
-            .read<LoginProvider>()
-            .groupList
+
+        if (stateData.isNotEmpty) {
+          stateName = stateData.first.stateName;
+          print("📍 State: $stateName");
+        }
+
+        // ✅ Load Districts
+        if (stateCode.isNotEmpty) {
+          loginProvider.selectedStateId = stateCode;
+          await loginProvider.getDistrictList(stateCode);
+
+          // ✅ Use provider's saved IDs (already loaded from cache or registration)
+          if (loginProvider.selectedDistrictId.isNotEmpty && 
+              loginProvider.selectedDistrictId != '0') {
+            
+            print("📍 Using DistrictId: ${loginProvider.selectedDistrictId}");
+
+            // ✅ Load Blocks
+            await loginProvider.getBlockList(loginProvider.selectedDistrictId);
+
+            if (loginProvider.selectedBlockId.isNotEmpty && 
+                loginProvider.selectedBlockId != '0') {
+              
+              print("📍 Using BlockId: ${loginProvider.selectedBlockId}");
+            }
+          }
+        }
+
+        // ✅ Set Class
+        classCode = user.course;
+        var subName = loginProvider.groupList
             .where((element) => element.course.contains(classCode))
-            .map((e) => e)
             .toList();
-        print(subName);
-        className= subName.first.subjectName;
-        subjectID= subName.first.subjectId;
 
-        print(data.first.stateName);
+        if (subName.isNotEmpty) {
+          className = subName.first.subjectName;
+          subjectID = subName.first.subjectId;
+        }
 
-        _selectedLanguage = context.read<HomeProvider>().userModel!.language;
-        _selectedCategory = context.read<HomeProvider>().userModel!.category;
-        _selectedGender = context.read<HomeProvider>().userModel!.citizen;
+        // ✅ Set selected values
+        _selectedLanguage = user.language;
+        _selectedCategory = user.category;
+        _selectedGender = user.citizen;
+
         setState(() {});
-      },
-    );
+      }
+    },
+  );
 
-    super.initState();
-  }
-
+  super.initState();
+}
   @override
   Widget build(BuildContext context) {
     var provider = Provider.of<LoginProvider>(context);
@@ -347,48 +396,124 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ],
                   ),
                   AppTheme.verticalSpacing(),
+      // ✅ State - Read Only (Cannot Change)
+Column(
+  crossAxisAlignment: CrossAxisAlignment.start,
+  children: [
+    Text(
+      'राज्य / State',
+      style: context.textTheme.labelMedium?.copyWith(
+        color: Colors.grey[700],
+      ),
+    ),
+    const SizedBox(height: 8),
+    Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.grey[200], // ✅ Disabled look
+        borderRadius: BorderRadius.circular(AppTheme.radius),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Text(
+        stateName.isNotEmpty ? stateName : 'राजस्थान', // ✅ Fixed state
+        style: context.textTheme.bodyLarge?.copyWith(
+          color: Colors.grey[800],
+        ),
+      ),
+    ),
+  ],
+),
 
-                  // State
+AppTheme.verticalSpacing(),
+                  AppTheme.verticalSpacing(),
+
                   CustomDropDownButton(
-                    initialSelection: stateName,
-                    label: 'राज्य का चयन करें',
-                    items: provider.stateList
-                        .map(
-                          (e) => e.stateName,
-                        )
+                    label: 'ज़िला चुनें',
+                    items: provider.districtList
+                        .map((e) => e.districtName)
                         .toList(),
-                    onSelect: (value) {
-                      print(value);
 
-                      var data = provider.stateList
-                          .where((element) => element.stateName.contains(value))
-                          .map((e) => e)
-                          .toList();
-                      print(data.first.stateName);
-                      print(data.first.stateId);
-                      stateName = data.first.stateName;
-                      stateCode = data.first.stateId;
-                      setState(() {});
+                    // ✅ Initial selection (agar user profile mein saved ho)
+                    initialSelection: provider.selectedDistrictId.isNotEmpty
+                        ? (provider.districtList
+                                .where((e) =>
+                                    e.districtId == provider.selectedDistrictId)
+                                .map((e) => e.districtName)
+                                .firstOrNull ??
+                            '')
+                        : '',
+
+                    // ✅ Dynamic update
+                    selectedValue: provider.selectedDistrictId.isEmpty
+                        ? null
+                        : provider.districtList
+                            .where((e) =>
+                                e.districtId == provider.selectedDistrictId)
+                            .map((e) => e.districtName)
+                            .firstOrNull,
+
+                    onSelect: (value) async {
+                      setState(() {
+                        districtError = null;
+                      });
+
+                      try {
+                        final district = provider.districtList
+                            .firstWhere((e) => e.districtName == value);
+
+                        provider.selectedDistrictId = district.districtId;
+                        provider.selectedBlockId = '';
+
+                        await provider.getBlockList(district.districtId);
+
+                        setState(() {}); // ✅ UI update
+                      } catch (e) {
+                        print("❌ District selection error: $e");
+                      }
                     },
                   ),
                   AppTheme.verticalSpacing(),
-                  // City
-                  CustomTextFormField(
-                    // key: UniqueKey(),
-                    hintText: 'City / ज़िला *',
-                    validator: (val) {
-                      if (val!.isNotEmpty) {
-                        return null;
-                      } else {
-                        return 'Enter city';
+                  CustomDropDownButton(
+                    label: 'ब्लॉक चुनें',
+                    items: provider.blockList.map((e) => e.blockName).toList(),
+
+                    // ✅ Initial selection
+                    initialSelection: provider.selectedBlockId.isNotEmpty
+                        ? (provider.blockList
+                                .where((e) =>
+                                    e.blockId == provider.selectedBlockId)
+                                .map((e) => e.blockName)
+                                .firstOrNull ??
+                            '')
+                        : '',
+
+                    // ✅ Dynamic update
+                    selectedValue: provider.selectedBlockId.isEmpty
+                        ? null
+                        : provider.blockList
+                            .where((e) => e.blockId == provider.selectedBlockId)
+                            .map((e) => e.blockName)
+                            .firstOrNull,
+
+                    onSelect: (value) {
+                      setState(() {
+                        blockError = null;
+                      });
+
+                      try {
+                        final block = provider.blockList
+                            .firstWhere((e) => e.blockName == value);
+
+                        provider.selectedBlockId = block.blockId;
+
+                        setState(() {}); // ✅ UI update
+                      } catch (e) {
+                        print("❌ Block selection error: $e");
                       }
                     },
-                    value: user.city,
-                    onChanged: (val) {
-                      user.city = val;
-                      setState(() {});
-                    },
                   ),
+
                   AppTheme.verticalSpacing(),
 
                   // Complete Address
@@ -449,6 +574,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   AppTheme.verticalSpacing(mul: 2),
                   CustomElevatedBtn(
                     onPressed: () async {
+                      // Validate State selection
+                      if (provider.selectedStateId.isEmpty) {
+                        setState(() {
+                          stateError = 'कृपया राज्य का चयन करें';
+                        });
+                        return;
+                      }
+
+                      // Validate District selection
+                      if (provider.selectedDistrictId.isEmpty) {
+                        setState(() {
+                          districtError = 'कृपया ज़िला का चयन करें';
+                        });
+                        return;
+                      }
+
+                      // Validate Block selection
+                      if (provider.selectedBlockId.isEmpty) {
+                        setState(() {
+                          blockError = 'कृपया ब्लॉक का चयन करें';
+                        });
+                        return;
+                      }
+
                       if (!_formKey.currentState!.validate()) return;
 
                       var res = await provider.updateProfile(
@@ -461,11 +610,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         dob: DatesUtils.getDateFromString(user.dob),
                         mobile: user.mobile,
                         category: _selectedCategory,
-                        state: stateCode,
+                        state: provider.selectedStateId,
                         address: user.address,
                         pinCode: user.pincode,
                         language: _selectedLanguage,
                         city: user.city,
+                        districtId: provider.selectedDistrictId, // ✅ Add karo
+                        blockId: provider.selectedBlockId,
                       );
 
                       ErrorUtils.showSimpleInfoDialog(context,

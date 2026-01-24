@@ -7,6 +7,9 @@ class ApiUrls {
   static const String register = '$baseUrl/AppSignUpNewExam';
   static const String registerNew = '$baseUrl/AppSignUpNewExam_New';
   static const String state = '$baseUrl/LoadState';
+  static const String district = '$baseUrl/BVP_RajasthanDistrict';
+  static const String block = '$baseUrl/BVP_GetRajasthanDistrictWiseBlock';
+  static const String banner = '$baseUrl/BVP_SelectAppLogo';
   static const String classes = '$baseUrl/LoadBranch';
   static const String qrInstruction = '$baseUrl/GetPaymentInstruction';
 

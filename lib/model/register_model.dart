@@ -49,6 +49,7 @@ class GroupModel {
   String courseName;
   String subjectIconImage;
   String subjectName;
+  
   String subjectDescription;
   String activeStatus;
   String rts;
@@ -132,4 +133,36 @@ class QRInstructionModel {
   Map<String, dynamic> toJson() => {
     "Instruction": instruction,
   };
+}
+class DistrictModel {
+  final String districtId;
+  final String districtName;
+
+  DistrictModel({
+    required this.districtId,
+    required this.districtName,
+  });
+
+  factory DistrictModel.fromJson(Map<String, dynamic> json) {
+    print("🔧 Parsing District JSON: $json");
+
+    return DistrictModel(
+      districtId: json['DistrictId']?.toString() ?? '',
+      districtName: json['District']?.toString() ?? '',
+    );
+  }
+}
+
+class BlockModel {
+  final String blockId;
+  final String blockName;
+
+  BlockModel({required this.blockId, required this.blockName});
+
+  factory BlockModel.fromJson(Map<String, dynamic> json) {
+    return BlockModel(
+      blockId: json['BlockId'].toString(),
+      blockName: json['BlockName'],
+    );
+  }
 }

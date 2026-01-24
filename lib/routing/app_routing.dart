@@ -63,7 +63,7 @@ class _AppRoutingState extends State<AppRouting> {
         return MultiProviderInitialise(
           child: MaterialApp.router(
             scaffoldMessengerKey: rootScaffoldMessengerKey,
-            title: 'Gauvigyaan',
+            title: 'सड़क सुरक्षा प्रश्नोत्तरी प्रतियोगिता',
             themeMode: ThemeMode.light,
             debugShowCheckedModeBanner: false,
             routeInformationProvider: router?.routeInformationProvider,

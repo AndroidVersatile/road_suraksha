@@ -33,9 +33,9 @@ dependencies:
   shared_preferences:
   provider:
   dio:
-  go_router: 12.1.3
+  go_router: ^17.0.1
   connectivity_plus:
-  fluttertoast: ^8.2.8
+  fluttertoast: ^9.0.0
   google_fonts:
   intl_utils:
   intl:
@@ -43,7 +43,7 @@ dependencies:
   file_picker:
   image_picker:
   webview_flutter:
-  video_player: 2.9.1
+  video_player: ^2.10.1
   in_app_update:
   flutter_animate:
   device_info_plus:
@@ -51,10 +51,10 @@ dependencies:
   cached_network_image: ^3.3.1
   animated_text_kit: ^4.2.2
   share_plus:
-  syncfusion_flutter_pdfviewer: ^26.2.8
+  syncfusion_flutter_pdfviewer: ^32.1.24
   audioplayers: ^6.0.0
   in_app_review: ^2.0.9
-  syncfusion_flutter_charts: ^26.2.8
+  syncfusion_flutter_charts: ^32.1.24
   lottie: ^3.1.2
   pdf:
   url_launcher: ^6.3.0
@@ -78,7 +78,7 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^3.0.0
+  flutter_lints: ^6.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
