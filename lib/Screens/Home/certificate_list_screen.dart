@@ -194,7 +194,7 @@ class _ViewLiveCertificateScreenState extends State<ViewLiveCertificateScreen> {
     } else if (a > 90) {
       rank = "A";
     } else {
-      certificateMsg = "सड़क सुरक्षा नियमो पर ध्यान दें |";
+      certificateMsg = "Pay attention to road safety rules";
       rank = "";
     }
 

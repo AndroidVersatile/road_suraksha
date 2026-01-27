@@ -520,156 +520,108 @@ class LiveCertificateScreen extends StatefulWidget {
 //   }
 // }
 
-
 ///
 class _LiveCertificateScreenState extends State<LiveCertificateScreen> {
   GlobalKey<State<StatefulWidget>> widget1RenderKey =
-  GlobalKey<State<StatefulWidget>>();
+      GlobalKey<State<StatefulWidget>>();
 
   bool loading = false;
+Future<void> pdfDownload({
+  required String name,
+  required String rank,
+  required String rtsDate,
+  required String districtName,
+  required String blockName,
+}) async {
+  if (!mounted) return;
 
-  pdfDownload({
-    required BuildContext contxt,
-    required String name,
-    required String address,
-    required String rank,
-    required String certificateMsg,
-    required String rtsDate, // formatted date
-     required String districtName,  // ✅ ADD
-  required String blockName,     // ✅ ADD
-  }) async {
-    loading = true;
-    setState(() {});
+  setState(() => loading = true);
 
+  // 🟢 UI ko ek frame dena (IMPORTANT – lag fix)
+  await Future.delayed(const Duration(milliseconds: 100));
+
+  try {
     final pdf = pw.Document();
-    final image = await rootBundle.load(Assets.certificate);
-    final imageBytes = image.buffer.asUint8List();
-    pw.Image bgImage = pw.Image(pw.MemoryImage(imageBytes));
+
+    final imageData = await rootBundle.load(Assets.certificate);
+    final bgImage = pw.MemoryImage(imageData.buffer.asUint8List());
 
     pdf.addPage(
       pw.Page(
-        margin: pw.EdgeInsets.zero,
         pageFormat: PdfPageFormat.a4,
-        orientation: pw.PageOrientation.portrait,
-        build: (pw.Context context) => pw.Stack(
+        margin: pw.EdgeInsets.zero,
+        build: (_) => pw.Stack(
           children: [
-            bgImage,
-            // Name
+            pw.Image(bgImage),
+
             pw.Positioned(
               top: 190,
               left: 155,
-              child: pw.Text(
-                name,
-                style: pw.TextStyle(
-                  fontWeight: pw.FontWeight.bold,
-                  fontSize: 15,
-                ),
-              ),
+              child: pw.Text(name,
+                  style: pw.TextStyle(
+                      fontSize: 15, fontWeight: pw.FontWeight.bold)),
             ),
-               pw.Positioned(
-            top: 210,
-            left: 155,
-            child: pw.Text(
-              districtName,
-              style: pw.TextStyle(
-                fontWeight: pw.FontWeight.bold,
-                fontSize: 12,
-              ),
-            ),
-          ),
-          
-          // ✅ Block (PDF)
-          pw.Positioned(
-            top: 210,
-            left: 100,
-            child: pw.Text(
-              blockName,
-              style: pw.TextStyle(
-                fontWeight: pw.FontWeight.bold,
-                fontSize: 12,
-              ),
-            ),
-          ),
-            // Address
-            // pw.Positioned(
-            //   top: 360,
-            //   left: 80,
-            //   child: pw.Text(
-            //     rtsDate,
-            //     style: pw.TextStyle(
-            //       fontWeight: pw.FontWeight.bold,
-            //       fontSize: 12,
-            //     ),
-            //   ),
-            // ),
-            // Rank
+
             pw.Positioned(
-              top: 256,
-              left: 300,
-              child: pw.Text(
-                rank,
-                style: pw.TextStyle(
-                  fontWeight: pw.FontWeight.bold,
-                  fontSize: 15,
-                ),
-              ),
+              top: 210,
+              left: 186,
+              child: pw.Text(districtName,
+                  style: pw.TextStyle(
+                      fontSize: 12, fontWeight: pw.FontWeight.bold)),
             ),
-            // Certificate Message
-            // pw.Positioned(
-            //   top: 270,
-            //   left: 80,
-            //   right: 40,
-            //   child: pw.Text(
-            //     certificateMsg,
-            //     style: pw.TextStyle(
-            //       fontWeight: pw.FontWeight.normal,
-            //       fontSize: 12,
-            //     ),
-            //   ),
-            // ),
-            // Date
+
             pw.Positioned(
-              top: 377,
-              left: 80,
-              child: pw.Text(
-                address,
-                style: pw.TextStyle(
-                  fontWeight: pw.FontWeight.bold,
-                  fontSize: 12,
-                ),
-              ),
+              top: 210,
+              left: 65,
+              child: pw.Text(blockName,
+                  style: pw.TextStyle(
+                      fontSize: 12, fontWeight: pw.FontWeight.bold)),
             ),
-            // // Location (address/city)
-            // pw.Positioned(
-            //   top: 408,
-            //   left: 100,
-            //   child: pw.Text(
-            //     address,
-            //     style: pw.TextStyle(
-            //       fontWeight: pw.FontWeight.bold,
-            //       fontSize: 12,
-            //     ),
-            //   ),
-            // ),
+
+            pw.Positioned(
+              top: 258,
+              left: 165,
+              child: pw.Text(rank,
+                  style: pw.TextStyle(
+                      fontSize: 15, fontWeight: pw.FontWeight.bold)),
+            ),
+
+            pw.Positioned(
+              top: 372,
+              left: 76,
+              child: pw.Text(rtsDate,
+                  style: pw.TextStyle(
+                      fontSize: 12, fontWeight: pw.FontWeight.bold)),
+            ),
           ],
         ),
       ),
     );
 
-    final output = await getTemporaryDirectory();
-    final file = File("${output.path}/certificate.pdf");
+    final dir = await getTemporaryDirectory();
+    final file = File('${dir.path}/certificate.pdf');
     await file.writeAsBytes(await pdf.save());
 
-    loading = false;
-    setState(() {});
-    Share.shareXFiles([XFile(file.path)]);
+    if (!mounted) return;
+
+    await Share.shareXFiles([XFile(file.path)],
+        text: 'Certificate');
+
+  } catch (e) {
+    debugPrint('PDF ERROR: $e');
+  } finally {
+    if (mounted) {
+      setState(() => loading = false);
+    }
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
     var provider = Provider.of<HomeProvider>(context);
     var percentage = provider.resultExamDetail.first.persantage;
-      String districtName = provider.userModel?.districtName ?? 'N/A';
+    String districtName = provider.userModel?.districtName ?? 'N/A';
     String blockName = provider.userModel?.blockName ?? 'N/A';
     // Calculate rank and certificate message
     String certificateMsg = '';
@@ -677,23 +629,19 @@ class _LiveCertificateScreenState extends State<LiveCertificateScreen> {
     double a = percentage;
 
     if (a < 60) {
-      certificateMsg =
-      "";
+      certificateMsg = "";
       rank = "D";
     } else if (a >= 60 && a <= 75) {
-      certificateMsg =
-      "";
+      certificateMsg = "";
       rank = "C";
     } else if (a >= 76 && a <= 90) {
-      certificateMsg =
-      "";
+      certificateMsg = "";
       rank = "B";
     } else if (a > 90) {
-      certificateMsg =
-      "";
+      certificateMsg = "";
       rank = "A";
     } else {
-      certificateMsg = "सड़क सुरक्षा नियमो पर ध्यान दें |";
+      certificateMsg = "Pay attention to road safety rules";
       rank = "";
     }
 
@@ -703,7 +651,7 @@ class _LiveCertificateScreenState extends State<LiveCertificateScreen> {
       if (provider.userModel?.rts != null &&
           provider.userModel!.rts.isNotEmpty) {
         DateTime rtsDateTime =
-        DateFormat('dd-MM-yyyy HH:mm:ss').parse(provider.userModel!.rts);
+            DateFormat('dd-MM-yyyy HH:mm:ss').parse(provider.userModel!.rts);
         formattedDate = DateFormat('dd-MM-yyyy').format(rtsDateTime);
       }
     } catch (e) {
@@ -715,7 +663,8 @@ class _LiveCertificateScreenState extends State<LiveCertificateScreen> {
       body: Stack(
         children: [
           Container(
-            decoration: BoxDecoration(border: Border.all(color: Color(0xFF850000))),
+            decoration:
+                BoxDecoration(border: Border.all(color: Color(0xFF850000))),
             height: context.screenHeight,
             width: context.screenWidth,
             padding: AppTheme.screenPadding,
@@ -750,9 +699,9 @@ class _LiveCertificateScreenState extends State<LiveCertificateScreen> {
                 //   ),
                 // ),
 
-                      Positioned(
+                Positioned(
                   top: 300,
-                  left: 126,
+                  left: 132,
                   child: Text(
                     ' $districtName',
                     style: context.textTheme.labelLarge?.copyWith(
@@ -764,7 +713,7 @@ class _LiveCertificateScreenState extends State<LiveCertificateScreen> {
                 // ✅ Block (Preview)
                 Positioned(
                   top: 300,
-                  left: 50,
+                  left: 38,
                   child: Text(
                     ' $blockName',
                     style: context.textTheme.labelLarge?.copyWith(
@@ -775,7 +724,7 @@ class _LiveCertificateScreenState extends State<LiveCertificateScreen> {
                 ),
                 Positioned(
                   top: 333,
-                  left:110,
+                  left: 110,
                   child: Text(
                     rank, // Show rank instead of percentage
                     style: context.textTheme.labelLarge?.copyWith(
@@ -787,11 +736,11 @@ class _LiveCertificateScreenState extends State<LiveCertificateScreen> {
                 Positioned(
                   top: 330,
                   left: 64,
-                  right: 40,
+                  // right: 40,
                   child: Text(
                     certificateMsg, // Show message under rank
-                    style: context.textTheme.labelSmall?.copyWith(
-                        color: Colors.orange, fontSize: 8),
+                    style: context.textTheme.labelSmall
+                        ?.copyWith(color: Colors.orange, fontSize: 8),
                   ),
                 ),
                 Positioned(
@@ -831,29 +780,36 @@ class _LiveCertificateScreenState extends State<LiveCertificateScreen> {
       ),
       bottomSheet: !loading
           ? Row(
-        children: [
-          Expanded(
-            child: CustomElevatedIconBtn(
-              icon: Icons.download,
-              color: context.colorScheme.primary,
-              onPressed: () {
-                pdfDownload(
-                  contxt: context,
-                  name: provider.userModel!.studentName,
-                  address: provider.userModel!.address,
-                  rank: rank,
-                  certificateMsg: certificateMsg,
-                  rtsDate: formattedDate,
-                  districtName: districtName, // ✅ ADD
-  blockName: blockName,     // ✅ ADD
-                );
-              },
-              text: 'Download Certificate',
-              iconColor: Colors.green,
-            ),
-          ),
-        ],
-      )
+              children: [
+                Expanded(
+                  child: CustomElevatedIconBtn(
+                    icon: Icons.download,
+                    color: context.colorScheme.primary,
+                    onPressed: () {
+                      // pdfDownload(
+                      //   contxt: context,
+                      //   name: provider.userModel!.studentName,
+                      //   // address: provider.userModel!.address,
+                      //   rank: rank,
+                      //   certificateMsg: certificateMsg,
+                      //   rtsDate: formattedDate,
+                      //   districtName: districtName, // ✅ ADD
+                      //   blockName: blockName, // ✅ ADD
+                      // );
+                      pdfDownload(
+                        name: provider.userModel!.studentName.toString(),
+                        rank: rank.toString(),
+                        rtsDate: formattedDate.toString(),
+                        districtName: districtName.toString(),
+                        blockName: blockName.toString(),
+                      );
+                    },
+                    text: 'Download Certificate',
+                    iconColor: Colors.green,
+                  ),
+                ),
+              ],
+            )
           : null,
     );
   }

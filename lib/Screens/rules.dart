@@ -111,10 +111,8 @@ class _ActivityRulesScreenState extends State<ActivityRulesScreen> {
                           padding: EdgeInsets.symmetric(
                               vertical: 10.0, horizontal: 15),
                           child: Text(
-                            'राष्ट्रीय सड़क सुरक्षा माह, 2026 (1 जनवरी - 31 जनवरी 2026)\n'
-                            'राज्य सड़क सुरक्षा प्रकोष्ठ, परिवहन एवं सड़क सुरक्षा विभाग, राजस्थान सरकार द्वारा\n'
-                            'जिला सड़क सुरक्षा समिति एवं शिक्षा विभाग के संयुक्त तत्वाधान में आयोजित\n'
-                            'ऑनलाईन सड़क सुरक्षा प्रश्नोतरी प्रतियोगिता',
+                            'राज्य सड़क सुरक्षा प्रकोष्ठ, परिवहन एवं सड़क सुरक्षा विभाग राजस्थान सरकार द्वारा जिला सड़क सुरक्षा समिति एवं शिक्षा विभाग के संयुक्त तत्वाधान में आयोजित ऑनलाईन सडक सुरक्षा प्रश्नोतरी प्रतियोगिता'
+                           ,
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               color: Color(0xFF0E37F6),
@@ -125,20 +123,20 @@ class _ActivityRulesScreenState extends State<ActivityRulesScreen> {
                             ),
                           ),
                         ),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(
-                              vertical: 10.0, horizontal: 15),
-                          child: Text(
-                            'आवास युथ सड़क सुरक्षा शिक्षा एवं जागरूकता अभियान',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Color(0xFFFC1100),
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                        ),
+                        // const Padding(
+                        //   padding: EdgeInsets.symmetric(
+                        //       vertical: 10.0, horizontal: 15),
+                        //   child: Text(
+                        //     'आवास युथ सड़क सुरक्षा शिक्षा एवं जागरूकता अभियान',
+                        //     textAlign: TextAlign.center,
+                        //     style: TextStyle(
+                        //       color: Color(0xFFFC1100),
+                        //       fontSize: 14,
+                        //       fontWeight: FontWeight.bold,
+                        //       letterSpacing: 1.2,
+                        //     ),
+                        //   ),
+                        // ),
                         const Padding(
                           padding: EdgeInsets.symmetric(vertical: 10.0),
                           child: Center(
