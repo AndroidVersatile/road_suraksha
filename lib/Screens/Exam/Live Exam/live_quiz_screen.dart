@@ -17,63 +17,6 @@ import '../../../constants/assets.dart';
 import '../../../constants/common_text.dart';
 import '../../../theme/app_theme.dart';
 
-// 🔥 Top-level function for compute() - Class ke bahar hona chahiye
-String buildLiveQuizQuery(Map<String, dynamic> data) {
-  final List<dynamic> questionsJson = data['questions'];
-  final int timeLeft = data['timeLeft'];
-
-  final buffer = StringBuffer();
-
-  for (final q in questionsJson) {
-    final question = q['question']?.toString().replaceAll("'", "''") ?? '';
-    final optionA = q['optionA']?.toString().replaceAll("'", "''") ?? '';
-    final optionB = q['optionB']?.toString().replaceAll("'", "''") ?? '';
-    final optionC = q['optionC']?.toString().replaceAll("'", "''") ?? '';
-    final optionD = q['optionD']?.toString().replaceAll("'", "''") ?? '';
-    final optionE = q['optionE']?.toString().replaceAll("'", "''") ?? '';
-    final optionF = q['optionF']?.toString().replaceAll("'", "''") ?? '';
-
-    buffer.write("""
-insert into M_EmployeeAttempedQuestions(
-EmpID, Subject, Exam, QuestionID, Question,
-OptionA, OptionB, OptionC, OptionD, OptionE, OptionF,
-QuestionAnswer, QuestionAttemptedAnswer,
-QuestionDisplayTime, QuestionMarks, IsSeen,
-QImage, AImage, BImage, CImage, DImage, EImage, FImage,
-isImage, ExamDetail, NagetiveMarks)
-select
-${q['studentId']},
-${q['subject']},
-${q['exam']},
-${q['questionId']},
-N'$question',
-N'$optionA',
-N'$optionB',
-N'$optionC',
-N'$optionD',
-N'$optionE',
-N'$optionF',
-'${q['questionAnswer'] ?? ''}',
-'${q['attempted'] ?? ''}',
-${35 - timeLeft},
-${q['marks'] ?? 0},
-'N',
-'${q['qImage'] ?? ''}',
-'${q['aImage'] ?? ''}',
-'${q['bImage'] ?? ''}',
-'${q['cImage'] ?? ''}',
-'${q['dImage'] ?? ''}',
-'${q['eImage'] ?? ''}',
-'${q['fImage'] ?? ''}',
-'${q['isImage'] ?? ''}',
-'${q['refNo'] ?? ''}',
-'0';
-""");
-  }
-
-  return buffer.toString();
-}
-
 class LiveQuizScreen extends StatefulWidget {
   const LiveQuizScreen({super.key});
 
@@ -87,6 +30,9 @@ class _LiveQuizScreenState extends State<LiveQuizScreen> {
   int _questionIndex = 0;
   int _totalScore = 0;
   Map<String, dynamic>? data;
+  
+  // ✅ NEW: Query parts ko store karenge as we go
+  final List<String> _queryParts = [];
 
   @override
   void initState() {
@@ -133,8 +79,65 @@ class _LiveQuizScreenState extends State<LiveQuizScreen> {
     }
   }
 
+  // ✅ NEW: Build query for current question immediately
+  void _buildCurrentQuestionQuery() {
+    final provider = context.read<HomeProvider>();
+    if (_questionIndex >= provider.demoQuestionList.length) return;
+    
+    final q = provider.demoQuestionList[_questionIndex];
+    final question = q.question.replaceAll("'", "''");
+    final optionA = q.optionA.replaceAll("'", "''");
+    final optionB = q.optionB.replaceAll("'", "''");
+    final optionC = q.optionC.replaceAll("'", "''");
+    final optionD = q.optionD.replaceAll("'", "''");
+    final optionE = q.optionE.replaceAll("'", "''");
+    final optionF = q.optionF.replaceAll("'", "''");
+
+    final queryPart = """
+insert into M_EmployeeAttempedQuestions(
+EmpID, Subject, Exam, QuestionID, Question,
+OptionA, OptionB, OptionC, OptionD, OptionE, OptionF,
+QuestionAnswer, QuestionAttemptedAnswer,
+QuestionDisplayTime, QuestionMarks, IsSeen,
+QImage, AImage, BImage, CImage, DImage, EImage, FImage,
+isImage, ExamDetail, NagetiveMarks)
+select
+${q.studentId},
+${q.subject},
+${q.exam},
+${q.questionId},
+N'$question',
+N'$optionA',
+N'$optionB',
+N'$optionC',
+N'$optionD',
+N'$optionE',
+N'$optionF',
+'${q.questionAnswer}',
+'${q.questionAttemptedAnswerDemo}',
+${35 - _timeLeft},
+${q.questionMarks},
+'N',
+'${q.qImage}',
+'${q.aImage}',
+'${q.bImage}',
+'${q.cImage}',
+'${q.dImage}',
+'${q.eImage}',
+'${q.fImage}',
+'${q.isImage}',
+'${q.refNo}',
+'0';
+""";
+
+    _queryParts.add(queryPart);
+  }
+
   void _nextQuestion() {
     _timer?.cancel();
+    
+    // ✅ Current question ka query build karo (light operation)
+    _buildCurrentQuestionQuery();
 
     if (_questionIndex < context.read<HomeProvider>().demoQuestionList.length - 1) {
       setState(() {
@@ -231,8 +234,11 @@ class _LiveQuizScreenState extends State<LiveQuizScreen> {
                             questions: provider.demoQuestionList,
                             timeLeft: _timeLeft,
                             totalScore: _totalScore,
+                            queryParts: _queryParts, // ✅ Pass pre-built queries
                             onSubmit: () {
                               _timer?.cancel();
+                              // Build last question's query
+                              _buildCurrentQuestionQuery();
                             },
                           ),
               ),
@@ -244,13 +250,14 @@ class _LiveQuizScreenState extends State<LiveQuizScreen> {
   }
 }
 
-class LiveQuiz extends StatelessWidget {
+class LiveQuiz extends StatefulWidget {
   final List<QuizModel> questions;
   final int questionIndex;
   final Function answerQuestion;
   final int timeLeft;
   final int totalScore;
   final VoidCallback onSubmit;
+  final List<String> queryParts; // ✅ Pre-built query parts
 
   const LiveQuiz({
     super.key,
@@ -260,7 +267,119 @@ class LiveQuiz extends StatelessWidget {
     required this.timeLeft,
     required this.totalScore,
     required this.onSubmit,
+    required this.queryParts,
   });
+
+  @override
+  State<LiveQuiz> createState() => _LiveQuizState();
+}
+
+class _LiveQuizState extends State<LiveQuiz> {
+  bool _isSubmitting = false;
+
+  Future<void> _handleSubmit() async {
+    if (_isSubmitting || !mounted) return;
+
+    setState(() => _isSubmitting = true);
+
+    // Timer stop + build last query
+    widget.onSubmit();
+
+    // Loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => WillPopScope(
+        onWillPop: () async => false,
+        child: const Center(
+          child: Card(
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Submitting...'),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    try {
+      // ✅ INSTANT - Just join pre-built strings!
+      debugPrint('Joining ${widget.queryParts.length} query parts...');
+      final questionList = widget.queryParts.join('\n');
+      debugPrint('Query ready! Length: ${questionList.length}');
+
+      final questionData =
+          "UPDATE M_EmployeeAttempedQuestions set ActiveStatus='N' "
+          "where Subject=${widget.questions[widget.questionIndex].subject} "
+          "and Exam=${widget.questions[widget.questionIndex].exam} "
+          "and EmpID=${widget.questions[widget.questionIndex].studentId};";
+
+      if (!mounted) return;
+
+      debugPrint('Submitting to API...');
+      final res = await context
+          .read<HomeProvider>()
+          .submitLiveQuiz(
+            refNo: widget.questions[widget.questionIndex].refNo,
+            examId: widget.questions[widget.questionIndex].exam,
+            questionDetail: questionData + questionList,
+          )
+          .timeout(const Duration(seconds: 30));
+
+      debugPrint('API Response: $res');
+
+      if (mounted) {
+        Navigator.pop(context); // Dialog close
+
+        if (res == 200) {
+          context.pushNamed(
+            AppPages.liveResult,
+            pathParameters: {"score": widget.totalScore.toString()},
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Submission failed. Please try again.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } on TimeoutException {
+      debugPrint('Timeout error');
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Request timeout. Please try again.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Submit error: $e');
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -268,14 +387,14 @@ class LiveQuiz extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            'Question No. ${questionIndex + 1}/${questions.length}',
+            'Question No. ${widget.questionIndex + 1}/${widget.questions.length}',
             style: context.textTheme.labelLarge?.copyWith(
               color: Colors.orange,
             ),
             textAlign: TextAlign.center,
           ),
           AppTheme.verticalSpacing(),
-          
+
           // Question Container
           Container(
             padding: AppTheme.boxPadding,
@@ -287,23 +406,24 @@ class LiveQuiz extends StatelessWidget {
             ),
             child: Column(
               children: [
-                if (questions[questionIndex].qImage.isNotEmpty)
+                if (widget.questions[widget.questionIndex].qImage.isNotEmpty)
                   Container(
                     height: 120,
                     margin: const EdgeInsets.only(bottom: 8),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: Image.network(
-                        'http://rajsadaksuraksha.versatileitsolution.com/QuestionImages/${questions[questionIndex].qImage}',
+                        'http://rajsadaksuraksha.versatileitsolution.com/QuestionImages/${widget.questions[widget.questionIndex].qImage}',
                         fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
+                        errorBuilder: (_, __, ___) =>
+                            const Icon(Icons.broken_image),
                       ),
                     ),
                   ),
                 Expanded(
                   child: SingleChildScrollView(
                     child: Text(
-                      questions[questionIndex].question,
+                      widget.questions[widget.questionIndex].question,
                       style: context.textTheme.titleMedium?.copyWith(
                         color: Colors.black,
                       ),
@@ -316,14 +436,14 @@ class LiveQuiz extends StatelessWidget {
           ),
 
           AppTheme.verticalSpacing(),
-          
+
           // Timer
           Row(
             children: [
               Expanded(
                 flex: 2,
                 child: LinearProgressIndicator(
-                  value: timeLeft / 35,
+                  value: widget.timeLeft / 35,
                   backgroundColor: Colors.grey[300],
                   color: Colors.orange,
                   minHeight: 10,
@@ -331,7 +451,7 @@ class LiveQuiz extends StatelessWidget {
                 ),
               ),
               Text(
-                ' 00:$timeLeft',
+                ' 00:${widget.timeLeft}',
                 style: context.textTheme.labelLarge?.copyWith(
                   color: Colors.red,
                 ),
@@ -340,19 +460,25 @@ class LiveQuiz extends StatelessWidget {
             ],
           ),
           AppTheme.verticalSpacing(),
-          
+
           // Options
-          ...(questions[questionIndex].getOptions()).map((option) {
+          ...(widget.questions[widget.questionIndex].getOptions()).map((option) {
             return LiveOptionButton(
-              answer: questions[questionIndex].questionAttemptedAnswerDemo,
-              onTap: (timeLeft == 0 ||
-                      questions[questionIndex].questionAttemptedAnswerDemo.isNotEmpty)
+              answer: widget.questions[widget.questionIndex]
+                  .questionAttemptedAnswerDemo,
+              onTap: (widget.timeLeft == 0 ||
+                      widget.questions[widget.questionIndex]
+                          .questionAttemptedAnswerDemo
+                          .isNotEmpty)
                   ? () {}
                   : () {
-                      questions[questionIndex].questionAttemptedAnswerDemo = '${option['index']}';
-                      answerQuestion(
-                        questions[questionIndex].questionAnswer == option['index']
-                            ? int.parse(questions[questionIndex].questionMarks)
+                      widget.questions[widget.questionIndex]
+                          .questionAttemptedAnswerDemo = '${option['index']}';
+                      widget.answerQuestion(
+                        widget.questions[widget.questionIndex].questionAnswer ==
+                                option['index']
+                            ? int.parse(widget
+                                .questions[widget.questionIndex].questionMarks)
                             : 0,
                       );
                     },
@@ -360,122 +486,16 @@ class LiveQuiz extends StatelessWidget {
               optionIndex: '${option['index']}',
             );
           }).toList(),
-          
+
           // Submit Button
-          if (questionIndex == context.read<HomeProvider>().demoQuestionList.length - 1)
-            CustomElevatedBtn(
-              onPressed: () async {
-                if (!context.mounted) return;
-
-                // Timer stop
-                onSubmit();
-
-                // Loading dialog
-                showDialog(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (_) => const Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                );
-
-                try {
-                  // ✅ Questions ko JSON format mein convert karo
-                  final questionsJson = questions.map((q) {
-                    return {
-                      'studentId': q.studentId,
-                      'subject': q.subject,
-                      'exam': q.exam,
-                      'questionId': q.questionId,
-                      'question': q.question,
-                      'optionA': q.optionA,
-                      'optionB': q.optionB,
-                      'optionC': q.optionC,
-                      'optionD': q.optionD,
-                      'optionE': q.optionE,
-                      'optionF': q.optionF,
-                      'questionAnswer': q.questionAnswer,
-                      'attempted': q.questionAttemptedAnswerDemo,
-                      'marks': q.questionMarks,
-                      'qImage': q.qImage,
-                      'aImage': q.aImage,
-                      'bImage': q.bImage,
-                      'cImage': q.cImage,
-                      'dImage': q.dImage,
-                      'eImage': q.eImage,
-                      'fImage': q.fImage,
-                      'isImage': q.isImage,
-                      'refNo': q.refNo,
-                    };
-                  }).toList();
-
-                  // ✅ Background thread mein query build karo
-                  final questionList = await compute(
-                    buildLiveQuizQuery,
-                    {
-                      "questions": questionsJson,
-                      "timeLeft": timeLeft,
-                    },
-                  );
-
-                  final questionData =
-                      "UPDATE M_EmployeeAttempedQuestions set ActiveStatus='N' "
-                      "where Subject=${questions[questionIndex].subject} "
-                      "and Exam=${questions[questionIndex].exam} "
-                      "and EmpID=${questions[questionIndex].studentId};";
-
-                  if (!context.mounted) return;
-
-                  final res = await context
-                      .read<HomeProvider>()
-                      .submitLiveQuiz(
-                        refNo: questions[questionIndex].refNo,
-                        examId: questions[questionIndex].exam,
-                        questionDetail: questionData + questionList,
-                      )
-                      .timeout(const Duration(seconds: 30));
-
-                  if (context.mounted) {
-                    Navigator.pop(context); // Dialog close
-
-                    if (res == 200) {
-                      context.pushNamed(
-                        AppPages.liveResult,
-                        pathParameters: {"score": totalScore.toString()},
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Submission failed. Please try again.'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  }
-                } on TimeoutException {
-                  if (context.mounted) {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Request timeout. Please try again.'),
-                        backgroundColor: Colors.orange,
-                      ),
-                    );
-                  }
-                } catch (e) {
-                  if (context.mounted) {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Error: $e'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                  debugPrint('Submit error: $e');
-                }
-              },
-              text: 'Submit',
+          if (widget.questionIndex ==
+              context.read<HomeProvider>().demoQuestionList.length - 1)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: CustomElevatedBtn(
+                onPressed: _isSubmitting ? null : _handleSubmit,
+                text: _isSubmitting ? 'Submitting...' : 'Submit',
+              ),
             ),
         ],
       ),
@@ -585,7 +605,8 @@ class LiveOptionButton extends StatelessWidget {
                       child: Image.network(
                         optionImage!,
                         fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
+                        errorBuilder: (_, __, ___) =>
+                            const Icon(Icons.broken_image),
                       ),
                     ),
                   Expanded(
@@ -684,13 +705,15 @@ class LiveResult extends StatelessWidget {
                         Assets.congrats,
                         repeat: false,
                       ),
-                      
+
                       // Total Questions
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Total Question', style: context.textTheme.titleMedium),
-                          Text('${resultData.total}', style: context.textTheme.titleMedium),
+                          Text('Total Question',
+                              style: context.textTheme.titleMedium),
+                          Text('${resultData.total}',
+                              style: context.textTheme.titleMedium),
                         ],
                       ),
                       LinearProgressIndicator(
@@ -707,11 +730,13 @@ class LiveResult extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text('Right', style: context.textTheme.titleMedium),
-                          Text('${resultData.rightAnswered}', style: context.textTheme.titleMedium),
+                          Text('${resultData.rightAnswered}',
+                              style: context.textTheme.titleMedium),
                         ],
                       ),
                       LinearProgressIndicator(
-                        value: resultData.rightAnswered.toDouble() / resultData.total,
+                        value: resultData.rightAnswered.toDouble() /
+                            resultData.total,
                         backgroundColor: Colors.grey[300],
                         color: Colors.green,
                         minHeight: 10,
@@ -724,7 +749,8 @@ class LiveResult extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text('Wrong', style: context.textTheme.titleMedium),
-                          Text('${resultData.wrong}', style: context.textTheme.titleMedium),
+                          Text('${resultData.wrong}',
+                              style: context.textTheme.titleMedium),
                         ],
                       ),
                       LinearProgressIndicator(
@@ -741,7 +767,8 @@ class LiveResult extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text('Seen', style: context.textTheme.titleMedium),
-                          Text('${resultData.total}', style: context.textTheme.titleMedium),
+                          Text('${resultData.total}',
+                              style: context.textTheme.titleMedium),
                         ],
                       ),
                       LinearProgressIndicator(
@@ -776,7 +803,7 @@ class LiveResult extends StatelessWidget {
 
 class _ChartData {
   _ChartData(this.x, this.y);
-
+  
   final String x;
   final double y;
 }

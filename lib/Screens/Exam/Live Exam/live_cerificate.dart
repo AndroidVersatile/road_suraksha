@@ -526,96 +526,88 @@ class _LiveCertificateScreenState extends State<LiveCertificateScreen> {
       GlobalKey<State<StatefulWidget>>();
 
   bool loading = false;
-Future<void> pdfDownload({
-  required String name,
-  required String rank,
-  required String rtsDate,
-  required String districtName,
-  required String blockName,
-}) async {
-  if (!mounted) return;
-
-  setState(() => loading = true);
-
-  // 🟢 UI ko ek frame dena (IMPORTANT – lag fix)
-  await Future.delayed(const Duration(milliseconds: 100));
-
-  try {
-    final pdf = pw.Document();
-
-    final imageData = await rootBundle.load(Assets.certificate);
-    final bgImage = pw.MemoryImage(imageData.buffer.asUint8List());
-
-    pdf.addPage(
-      pw.Page(
-        pageFormat: PdfPageFormat.a4,
-        margin: pw.EdgeInsets.zero,
-        build: (_) => pw.Stack(
-          children: [
-            pw.Image(bgImage),
-
-            pw.Positioned(
-              top: 190,
-              left: 155,
-              child: pw.Text(name,
-                  style: pw.TextStyle(
-                      fontSize: 15, fontWeight: pw.FontWeight.bold)),
-            ),
-
-            pw.Positioned(
-              top: 210,
-              left: 186,
-              child: pw.Text(districtName,
-                  style: pw.TextStyle(
-                      fontSize: 12, fontWeight: pw.FontWeight.bold)),
-            ),
-
-            pw.Positioned(
-              top: 210,
-              left: 65,
-              child: pw.Text(blockName,
-                  style: pw.TextStyle(
-                      fontSize: 12, fontWeight: pw.FontWeight.bold)),
-            ),
-
-            pw.Positioned(
-              top: 258,
-              left: 165,
-              child: pw.Text(rank,
-                  style: pw.TextStyle(
-                      fontSize: 15, fontWeight: pw.FontWeight.bold)),
-            ),
-
-            pw.Positioned(
-              top: 372,
-              left: 76,
-              child: pw.Text(rtsDate,
-                  style: pw.TextStyle(
-                      fontSize: 12, fontWeight: pw.FontWeight.bold)),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    final dir = await getTemporaryDirectory();
-    final file = File('${dir.path}/certificate.pdf');
-    await file.writeAsBytes(await pdf.save());
-
+  Future<void> pdfDownload({
+    required String name,
+    required String rank,
+    required String rtsDate,
+    required String districtName,
+    required String blockName,
+  }) async {
     if (!mounted) return;
 
-    await Share.shareXFiles([XFile(file.path)],
-        text: 'Certificate');
+    setState(() => loading = true);
 
-  } catch (e) {
-    debugPrint('PDF ERROR: $e');
-  } finally {
-    if (mounted) {
-      setState(() => loading = false);
+    // 🟢 UI ko ek frame dena (IMPORTANT – lag fix)
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    try {
+      final pdf = pw.Document();
+
+      final imageData = await rootBundle.load(Assets.certificate);
+      final bgImage = pw.MemoryImage(imageData.buffer.asUint8List());
+
+      pdf.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a4,
+          margin: pw.EdgeInsets.zero,
+          build: (_) => pw.Stack(
+            children: [
+              pw.Image(bgImage),
+              pw.Positioned(
+                top: 190,
+                left: 155,
+                child: pw.Text(name,
+                    style: pw.TextStyle(
+                        fontSize: 15, fontWeight: pw.FontWeight.bold)),
+              ),
+              pw.Positioned(
+                top: 210,
+                left: 186,
+                child: pw.Text(districtName,
+                    style: pw.TextStyle(
+                        fontSize: 12, fontWeight: pw.FontWeight.bold)),
+              ),
+              pw.Positioned(
+                top: 210,
+                left: 65,
+                child: pw.Text(blockName,
+                    style: pw.TextStyle(
+                        fontSize: 12, fontWeight: pw.FontWeight.bold)),
+              ),
+              pw.Positioned(
+                top: 258,
+                left: 165,
+                child: pw.Text(rank,
+                    style: pw.TextStyle(
+                        fontSize: 15, fontWeight: pw.FontWeight.bold)),
+              ),
+              pw.Positioned(
+                top: 372,
+                left: 76,
+                child: pw.Text(rtsDate,
+                    style: pw.TextStyle(
+                        fontSize: 12, fontWeight: pw.FontWeight.bold)),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/certificate.pdf');
+      await file.writeAsBytes(await pdf.save());
+
+      if (!mounted) return;
+
+      await Share.shareXFiles([XFile(file.path)], text: 'Certificate');
+    } catch (e) {
+      debugPrint('PDF ERROR: $e');
+    } finally {
+      if (mounted) {
+        setState(() => loading = false);
+      }
     }
   }
-}
-
 
   @override
   Widget build(BuildContext context) {

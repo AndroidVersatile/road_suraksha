@@ -24,30 +24,37 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
+  
+  // Language, Category, Gender
   String _selectedLanguage = 'H';
-  String _selectedCategory = 'C';
+  String _selectedCategory = 'S';
   String _selectedGender = 'M';
-  String? selectedBlockName; // ✅ ADD THIS
-  String? selectedDistrictName; // ✅ ADD THIS
+  
+  // Form Fields
   String name = '';
   String fName = '';
   DateTime dob = DateTime.now();
   String mobile = '';
+  String schoolName = '';
+  String address = '';
+  String pinCode = '';
+  String city = '';
+  
+  // Class Related
   String classes = '';
   String subjectID = '';
   String level = '';
-  String schoolName = '';
-  String school = '';
-  String state = '';
-  String utrNo = '';
-  String city = '';
-  String address = '';
-  String pinCode = '';
   String? selectedClass;
+  
+  // Location Related
+  String? selectedDistrictName;
+  String? selectedBlockName;
+  
+  // Validation Errors
   String? classError;
-  String? stateError;
   String? districtError;
   String? blockError;
+
   @override
   void initState() {
     super.initState();
@@ -59,19 +66,198 @@ class _RegisterScreenState extends State<RegisterScreen> {
       await provider.getStateList();
       await provider.getClassList();
 
-      // ✅ IMPORTANT: Rajasthan ke districts load karo on init
+      // Load Rajasthan districts on init
       if (provider.stateList.isNotEmpty) {
-        provider.selectedStateId = '29'; // Rajasthan
+        provider.selectedStateId = '29'; // Rajasthan State ID
         await provider.getDistrictList('29');
       }
     });
   }
 
+  // Validate all selections before submission
+  bool _validateSelections(LoginProvider provider) {
+    bool isValid = true;
+
+    // Validate Class if Student category
+    if (_selectedCategory == 'S' && 
+        (selectedClass == null || selectedClass!.isEmpty)) {
+      setState(() {
+        classError = 'कृपया कक्षा का चयन करें / Please select class';
+      });
+      isValid = false;
+    }
+
+    // Validate District
+    if (provider.selectedDistrictId.isEmpty || 
+        selectedDistrictName == null || 
+        selectedDistrictName!.isEmpty) {
+      setState(() {
+        districtError = 'कृपया ज़िला का चयन करें / Please select district';
+      });
+      isValid = false;
+    }
+
+    // Validate Block
+    if (provider.selectedBlockId.isEmpty || 
+        selectedBlockName == null || 
+        selectedBlockName!.isEmpty) {
+      setState(() {
+        blockError = 'कृपया ब्लॉक का चयन करें / Please select block';
+      });
+      isValid = false;
+    }
+
+    // Show error message if validation fails
+    if (!isValid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'कृपया सभी आवश्यक फ़ील्ड भरें / Please fill all required fields',
+            style: TextStyle(color: Colors.white),
+          ),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+
+    return isValid;
+  }
+
+  // Handle form submission
+  Future<void> _handleSubmit(LoginProvider provider) async {
+    // Clear previous errors
+    setState(() {
+      classError = null;
+      districtError = null;
+      blockError = null;
+    });
+
+    // Validate selections
+    if (!_validateSelections(provider)) {
+      return;
+    }
+
+    // Validate form fields
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    try {
+      print("📤 Sending registration request...");
+      print("Name: $name");
+      print("Father Name: $fName");
+      print("Mobile: $mobile");
+      print("Category: $_selectedCategory");
+      print("Gender: $_selectedGender");
+      print("Group: $classes");
+      print("SubjectID: $subjectID");
+      print("StateID: 29 (Rajasthan)");
+      print("DistrictID: ${provider.selectedDistrictId}");
+      print("DistrictName: $selectedDistrictName");
+      print("BlockID: ${provider.selectedBlockId}");
+      print("BlockName: $selectedBlockName");
+      print("Address: $address");
+      print("Pincode: $pinCode");
+
+      var res = await provider.register(
+        group: classes,
+        subjectID: subjectID,
+        gender: _selectedGender,
+        schoolName: schoolName,
+        name: name,
+        fName: fName,
+        dob: dob,
+        mobile: mobile,
+        category: _selectedCategory,
+        state: '29', // Rajasthan State ID
+        districtId: provider.selectedDistrictId,
+        blockId: provider.selectedBlockId,
+        blockName: selectedBlockName ?? '',
+        districtName: selectedDistrictName ?? '',
+        address: address,
+        pinCode: pinCode,
+        language: _selectedLanguage,
+        utrNo: "123456",
+        city: city,
+      );
+
+      // Close loading indicator
+      if (Navigator.canPop(context)) {
+        Navigator.of(context).pop();
+      }
+
+      print("📥 Register Response: $res");
+
+      // Handle response
+      if (res != null) {
+        final status = res['Status']?.toString().toLowerCase();
+
+        if (status == 'true') {
+          ErrorUtils.showSimpleInfoDialog(
+            context,
+            icon: Icons.check_circle_outline,
+            color: Colors.green,
+            content: Text('${res['Message'] ?? 'Registration Successful'}'),
+            onConfirm: () {
+              Navigator.of(context).pop(); // Close dialog
+              Navigator.of(context).pop(); // Close register screen
+            },
+          );
+        } else {
+          ErrorUtils.showSimpleInfoDialog(
+            context,
+            icon: Icons.error_outline,
+            color: Colors.red,
+            content: Text('${res['Message'] ?? 'Registration Failed'}'),
+            onConfirm: () {
+              Navigator.of(context).pop();
+            },
+          );
+        }
+      } else {
+        ErrorUtils.showSimpleInfoDialog(
+          context,
+          icon: Icons.error_outline,
+          color: Colors.red,
+          content: const Text('Server Error - Please try again'),
+          onConfirm: () {
+            Navigator.of(context).pop();
+          },
+        );
+      }
+    } catch (e, stackTrace) {
+      // Close loading if still open
+      if (Navigator.canPop(context)) {
+        Navigator.of(context).pop();
+      }
+
+      print("❌ Register Error: $e");
+      print("❌ Stack: $stackTrace");
+
+      ErrorUtils.showErrorSnackBar(
+        "Registration failed: ${e.toString()}",
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     var provider = Provider.of<LoginProvider>(context);
+    
     return Scaffold(
-      appBar: AppBar(title: const Text(CommonText.register)),
+      appBar: AppBar(
+        title: const Text(CommonText.register),
+      ),
       body: Container(
         margin: AppTheme.boxPadding,
         child: SingleChildScrollView(
@@ -82,129 +268,130 @@ class _RegisterScreenState extends State<RegisterScreen> {
               children: [
                 AppTheme.verticalSpacing(),
 
-                // Name
+                // Name Field
                 CustomTextFormField(
                   hintText: 'Name / नाम *',
                   validator: (val) {
-                    if (val!.isNotEmpty) {
-                      return null;
-                    } else {
-                      return 'Enter name';
+                    if (val == null || val.isEmpty) {
+                      return 'कृपया नाम दर्ज करें / Please enter name';
                     }
+                    return null;
                   },
                   value: name,
                   onChanged: (val) {
-                    name = val;
-                    setState(() {});
+                    setState(() {
+                      name = val;
+                    });
                   },
                 ),
                 AppTheme.verticalSpacing(),
 
-                // Father's Name
+                // Father's Name Field
                 CustomTextFormField(
                   hintText: 'Father Name / पिता का नाम *',
                   validator: (val) {
-                    if (val!.isNotEmpty) {
-                      return null;
-                    } else {
-                      return 'Enter father name';
+                    if (val == null || val.isEmpty) {
+                      return 'कृपया पिता का नाम दर्ज करें / Please enter father name';
                     }
+                    return null;
                   },
                   value: fName,
                   onChanged: (val) {
-                    fName = val;
-                    setState(() {});
+                    setState(() {
+                      fName = val;
+                    });
                   },
                 ),
                 AppTheme.verticalSpacing(),
 
-                // DOB
+                // Date of Birth
                 PickTimeWidget(
                   title: 'DOB / जन्म तिथि *',
                   initialValue: DateTime.now(),
                   onPickedDate: (val) {
-                    dob = val;
-                    setState(() {});
+                    setState(() {
+                      dob = val;
+                    });
                   },
                   isPreviousDate: true,
                   isFutureDate: false,
                 ),
                 AppTheme.verticalSpacing(),
 
-                // Whatsapp No.
+                // WhatsApp Number
                 CustomTextFormField(
                   hintText: 'Whatsapp No. / व्हाट्सएप नं *',
                   length: 10,
                   validator: (val) {
-                    if (val!.isNotEmpty) {
-                      return null;
-                    } else {
-                      return 'Enter number';
+                    if (val == null || val.isEmpty) {
+                      return 'कृपया मोबाइल नंबर दर्ज करें / Please enter mobile number';
                     }
+                    if (val.length != 10) {
+                      return 'मोबाइल नंबर 10 अंकों का होना चाहिए / Mobile number must be 10 digits';
+                    }
+                    return null;
                   },
                   value: mobile,
                   onChanged: (val) {
-                    mobile = val;
-                    setState(() {});
+                    setState(() {
+                      mobile = val;
+                    });
                   },
                   inputType: TextInputType.phone,
                 ),
                 AppTheme.verticalSpacing(),
 
-                // Exam Language
-                Text('Exam Language / परीक्षा की भाषा *',
-                    style: context.textTheme.labelLarge),
+                // Exam Language Selection
+                Text(
+                  'Exam Language / परीक्षा की भाषा *',
+                  style: context.textTheme.labelLarge,
+                ),
                 AppTheme.verticalSpacing(),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Radio(
-                          value: 'H',
-                          groupValue: _selectedLanguage,
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedLanguage = value!;
-                            });
-                          },
-                        ),
-                        const Text('Hindi / हिन्दी'),
-                      ],
+                    Radio(
+                      value: 'H',
+                      groupValue: _selectedLanguage,
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedLanguage = value!;
+                        });
+                      },
                     ),
+                    const Text('Hindi / हिन्दी'),
                   ],
                 ),
                 AppTheme.verticalSpacing(),
 
-                // Category
-                Text('Category / वर्ग *', style: context.textTheme.labelLarge),
+                // Category Selection
+                Text(
+                  'Category / वर्ग *',
+                  style: context.textTheme.labelLarge,
+                ),
+                AppTheme.verticalSpacing(),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Radio(
-                          value: 'S',
-                          groupValue: _selectedCategory,
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedCategory = value!;
-                            });
-                          },
-                        ),
-                        Text('Student / विद्यार्थी'),
-                      ],
+                    Radio(
+                      value: 'S',
+                      groupValue: _selectedCategory,
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedCategory = value!;
+                        });
+                      },
                     ),
+                    const Text('Student / विद्यार्थी'),
                   ],
                 ),
                 AppTheme.verticalSpacing(),
 
-                // ✅ Class Selection (Only if Student)
+                // Class Selection (Only for Students)
                 if (_selectedCategory == 'S') ...[
                   CustomDropDownButton(
-                    label: 'कक्षा का चयन करें',
-                    items:
-                        provider.groupList.map((e) => e.subjectName).toList(),
+                    label: 'कक्षा का चयन करें / Select Class *',
+                    items: provider.groupList.map((e) => e.subjectName).toList(),
                     initialSelection: '',
                     onSelect: (value) {
                       setState(() {
@@ -214,7 +401,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                       try {
                         var data = provider.groupList.firstWhere(
-                            (element) => element.subjectName == value);
+                          (element) => element.subjectName == value,
+                        );
 
                         classes = data.course;
                         subjectID = data.subjectId;
@@ -229,39 +417,49 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       padding: const EdgeInsets.only(left: 12.0, top: 4.0),
                       child: Text(
                         classError!,
-                        style: const TextStyle(color: Colors.red, fontSize: 12),
+                        style: const TextStyle(
+                          color: Colors.red,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                   AppTheme.verticalSpacing(),
-                  Text(
-                    level,
-                    textAlign: TextAlign.end,
-                    style: context.textTheme.titleSmall
-                        ?.copyWith(color: Colors.redAccent),
-                  ),
+                  
+                  if (level.isNotEmpty)
+                    Text(
+                      level,
+                      textAlign: TextAlign.end,
+                      style: context.textTheme.titleSmall?.copyWith(
+                        color: Colors.redAccent,
+                      ),
+                    ),
                   AppTheme.verticalSpacing(),
 
                   // School Name
                   CustomTextFormField(
                     hintText: 'School / College / Institute Name *',
                     validator: (val) {
-                      if (val!.isNotEmpty) {
-                        return null;
-                      } else {
-                        return 'Enter School / College / Institute Name';
+                      if (_selectedCategory == 'S' && (val == null || val.isEmpty)) {
+                        return 'कृपया स्कूल/कॉलेज का नाम दर्ज करें / Please enter school/college name';
                       }
+                      return null;
                     },
                     value: schoolName,
                     onChanged: (val) {
-                      schoolName = val;
-                      setState(() {});
+                      setState(() {
+                        schoolName = val;
+                      });
                     },
                   ),
                   AppTheme.verticalSpacing(),
                 ],
 
-                // Gender
-                Text('Gender / लिंग *', style: context.textTheme.labelLarge),
+                // Gender Selection
+                Text(
+                  'Gender / लिंग *',
+                  style: context.textTheme.labelLarge,
+                ),
+                AppTheme.verticalSpacing(),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
@@ -276,7 +474,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             });
                           },
                         ),
-                        Text('Male / पुरुष'),
+                        const Text('Male / पुरुष'),
                       ],
                     ),
                     Row(
@@ -290,14 +488,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             });
                           },
                         ),
-                        Text('Female / महिला'),
+                        const Text('Female / महिला'),
                       ],
                     ),
                   ],
                 ),
                 AppTheme.verticalSpacing(),
 
-                // ✅ STATE DROPDOWN (Fixed - Rajasthan only, Read-only look)
+                // State (Fixed - Rajasthan)
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -312,163 +510,163 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 14),
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.grey[100],
                         borderRadius: BorderRadius.circular(AppTheme.radius),
                         border: Border.all(color: Colors.grey[300]!),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'राजस्थान',
-                            style: context.textTheme.bodyLarge?.copyWith(
-                              color: Colors.grey[800],
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          // Icon(
-                          //   Icons.lock_outline,
-                          //   size: 18,
-                          //   color: Colors.grey[600],
-                          // ),
-                        ],
+                      child: Text(
+                        'राजस्थान / Rajasthan',
+                        style: context.textTheme.bodyLarge?.copyWith(
+                          color: Colors.grey[800],
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ],
                 ),
                 AppTheme.verticalSpacing(),
 
-                // ✅ DISTRICT DROPDOWN
-            // ✅ DISTRICT DROPDOWN - Update onSelect
-CustomDropDownButton(
-  label: 'ज़िला चुनें *',
-  items: provider.districtList.map((e) => e.districtName).toList(),
-  initialSelection: '',
-  onSelect: (value) {
-    setState(() {
-      districtError = null;
-    });
+                // District Selection
+                CustomDropDownButton(
+                  label: 'ज़िला चुनें / Select District *',
+                  items: provider.districtList.map((e) => e.districtName).toList(),
+                  initialSelection: '',
+                  onSelect: (value) {
+                    setState(() {
+                      districtError = null;
+                      blockError = null;
+                    });
 
-    print("🟢 District selected: $value");
+                    print("🟢 District selected: $value");
 
-    try {
-      final district = provider.districtList
-          .firstWhere((e) => e.districtName == value);
+                    try {
+                      final district = provider.districtList.firstWhere(
+                        (e) => e.districtName == value,
+                      );
 
-      provider.selectedDistrictId = district.districtId;
-      provider.selectedDistrictName = district.districtName; // ✅ ADD THIS LINE
-      provider.selectedBlockId = ''; // ✅ Reset block
-      provider.getBlockList(district.districtId);
+                      provider.selectedDistrictId = district.districtId;
+                      selectedDistrictName = district.districtName;
+                      
+                      // Reset block selection when district changes
+                      provider.selectedBlockId = '';
+                      selectedBlockName = null;
+                      
+                      // Load blocks for selected district
+                      provider.getBlockList(district.districtId);
 
-      setState(() {});
-    } catch (e) {
-      print("❌ District selection error: $e");
-    }
-  },
-),
+                      setState(() {});
+                    } catch (e) {
+                      print("❌ District selection error: $e");
+                    }
+                  },
+                ),
+                if (districtError != null)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 12.0, top: 4.0),
+                    child: Text(
+                      districtError!,
+                      style: const TextStyle(
+                        color: Colors.red,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
                 AppTheme.verticalSpacing(),
 
-                // ✅ BLOCK DROPDOWN
-                // CustomDropDownButton(
-                //   label: 'ब्लॉक चुनें *',
-                //   items: provider.blockList.map((e) => e.blockName).toList(),
-                //   initialSelection: '',
-                //   onSelect: (value) {
-                //     setState(() {
-                //       blockError = null;
-                //     });
+                // Block Selection
+                if (provider.selectedDistrictId.isEmpty)
+                  // Show disabled state
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(AppTheme.radius),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'पहले ज़िला चुनें / First select district',
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                        Icon(
+                          Icons.lock_outline,
+                          color: Colors.grey[400],
+                          size: 18,
+                        ),
+                      ],
+                    ),
+                  )
+                else if (provider.loading)
+                  // Show loading indicator
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: CircularProgressIndicator(),
+                    ),
+                  )
+                else
+                  // Show block dropdown
+                  CustomDropDownButton(
+                    label: 'ब्लॉक चुनें / Select Block *',
+                    items: provider.blockList.map((e) => e.blockName).toList(),
+                    initialSelection: '',
+                    onSelect: (value) {
+                      setState(() {
+                        blockError = null;
+                      });
 
-                //     try {
-                //       final block = provider.blockList
-                //           .firstWhere((e) => e.blockName == value);
+                      print("🟢 Block selected: $value");
 
-                //       provider.selectedBlockId = block.blockId;
+                      try {
+                        final block = provider.blockList.firstWhere(
+                          (e) => e.blockName == value,
+                        );
 
-                //       setState(() {});
-                //     } catch (e) {
-                //       print("❌ Block selection error: $e");
-                //     }
-                //   },
-                // ),
-                // if (blockError != null)
-                //   Padding(
-                //     padding: const EdgeInsets.only(left: 12.0, top: 4.0),
-                //     child: Text(
-                //       blockError!,
-                //       style: const TextStyle(color: Colors.red, fontSize: 12),
-                //     ),
-                //   ),
-                // ✅ BLOCK DROPDOWN - Proper implementation
-if (provider.selectedDistrictId.isEmpty)
-  // Show disabled state
-  Container(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-    decoration: BoxDecoration(
-      color: Colors.grey[200],
-      borderRadius: BorderRadius.circular(AppTheme.radius),
-      border: Border.all(color: Colors.grey[300]!),
-    ),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          'पहले ज़िला चुनें',
-          style: TextStyle(color: Colors.grey[600]),
-        ),
-        Icon(Icons.lock_outline, color: Colors.grey[400], size: 18),
-      ],
-    ),
-  )
-else if (provider.loading)
-  // Show loading
-  const Center(
-    child: Padding(
-      padding: EdgeInsets.all(16.0),
-      child: CircularProgressIndicator(),
-    ),
-  )
-else
-  // Show dropdown
-   CustomDropDownButton(
-    label: 'ब्लॉक चुनें *',
-    items: provider.blockList.map((e) => e.blockName).toList(),
-    initialSelection: '',
-    onSelect: (value) {
-      setState(() {
-        blockError = null;
-      });
+                        provider.selectedBlockId = block.blockId;
+                        selectedBlockName = block.blockName;
 
-      try {
-        final block = provider.blockList
-            .firstWhere((e) => e.blockName == value);
-
-        provider.selectedBlockId = block.blockId;
-        selectedBlockName = block.blockName; // ✅ ADD THIS
-        
-        setState(() {});
-      } catch (e) {
-        print("❌ Block selection error: $e");
-      }
-    },
-  ),
+                        setState(() {});
+                      } catch (e) {
+                        print("❌ Block selection error: $e");
+                      }
+                    },
+                  ),
+                if (blockError != null)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 12.0, top: 4.0),
+                    child: Text(
+                      blockError!,
+                      style: const TextStyle(
+                        color: Colors.red,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
                 AppTheme.verticalSpacing(),
 
                 // Complete Address
                 CustomTextFormField(
                   hintText: 'Complete Address / पूरा पता *',
                   validator: (val) {
-                    if (val!.isNotEmpty) {
-                      return null;
-                    } else {
-                      return 'Enter address';
+                    if (val == null || val.isEmpty) {
+                      return 'कृपया पूरा पता दर्ज करें / Please enter complete address';
                     }
+                    return null;
                   },
                   value: address,
                   onChanged: (val) {
-                    address = val;
-                    setState(() {});
+                    setState(() {
+                      address = val;
+                    });
                   },
                 ),
                 AppTheme.verticalSpacing(),
@@ -476,156 +674,30 @@ else
                 // Pincode
                 CustomTextFormField(
                   hintText: 'Pincode / पिन कोड *',
+                  length: 6,
                   validator: (val) {
-                    if (val!.isNotEmpty) {
-                      return null;
-                    } else {
-                      return 'Enter pincode';
+                    if (val == null || val.isEmpty) {
+                      return 'कृपया पिन कोड दर्ज करें / Please enter pincode';
                     }
+                    if (val.length != 6) {
+                      return 'पिन कोड 6 अंकों का होना चाहिए / Pincode must be 6 digits';
+                    }
+                    return null;
                   },
                   value: pinCode,
                   onChanged: (val) {
-                    pinCode = val;
-                    setState(() {});
+                    setState(() {
+                      pinCode = val;
+                    });
                   },
                   inputType: TextInputType.number,
                 ),
                 AppTheme.verticalSpacing(mul: 3),
 
-                // ✅ SUBMIT BUTTON
+                // Submit Button
                 CustomElevatedBtn(
-                  onPressed: () async {
-                    // Validate class selection if category is Student
-                    if (_selectedCategory == 'S' &&
-                        (selectedClass == null || selectedClass!.isEmpty)) {
-                      setState(() {
-                        classError = 'कृपया कक्षा का चयन करें';
-                      });
-                      return;
-                    }
-
-                    // ✅ Validate District selection
-                    if (provider.selectedDistrictId.isEmpty) {
-                      setState(() {
-                        districtError = 'कृपया ज़िला का चयन करें';
-                      });
-                      return;
-                    }
-
-                    // ✅ Validate Block selection
-                    if (provider.selectedBlockId.isEmpty) {
-                      setState(() {
-                        blockError = 'कृपया ब्लॉक का चयन करें';
-                      });
-                      return;
-                    }
-
-                    if (!_formKey.currentState!.validate()) {
-                      return;
-                    }
-
-                    // ✅ Loading indicator
-                    showDialog(
-                      context: context,
-                      barrierDismissible: false,
-                      builder: (context) => const Center(
-                        child: CircularProgressIndicator(),
-                      ),
-                    );
-
-                    try {
-                      print("📤 Sending registration request...");
-                      print("Group: $classes");
-                      print("SubjectID: $subjectID");
-                      print("StateID: 29"); // ✅ Fixed Rajasthan
-                      print("DistrictID: ${provider.selectedDistrictId}");
-                      print("BlockID: ${provider.selectedBlockId}");
-
-                      var res = await provider.register(
-                        group: classes,
-                        subjectID: subjectID,
-                        gender: _selectedGender,
-                        schoolName: schoolName,
-                        name: name,
-                        fName: fName,
-                        dob: dob,
-                        mobile: mobile,
-                        category: _selectedCategory,
-                        state: '29', // ✅ Rajasthan State ID
-                        districtId:
-                            provider.selectedDistrictId, // ✅ MUST NOT be empty
-                        blockId:
-                            provider.selectedBlockId,
-                              blockName: selectedBlockName ?? '', // ✅ ADD THIS
-  districtName: provider.selectedDistrictName, // ✅ ADD THIS LINE
-
-                        address: address,
-                        pinCode: pinCode,
-                        language: _selectedLanguage,
-                        utrNo: "123456",
-                        city: city,
-                      );
-
-                      print("📥 After Registration:");
-                      print("StateID: ${provider.selectedStateId}");
-                      print("DistrictID: ${provider.selectedDistrictId}");
-                      print("BlockID: ${provider.selectedBlockId}");
-                      // ✅ Close loading
-                      Navigator.of(context).pop();
-
-                      print("📥 Register Response: $res");
-
-                      if (res != null) {
-                        final status = res['Status']?.toString().toLowerCase();
-
-                        if (status == 'true') {
-                          ErrorUtils.showSimpleInfoDialog(
-                            context,
-                            icon: Icons.check_circle_outline,
-                            color: Colors.green,
-                            content: Text(
-                                '${res['Message'] ?? 'Registration Successful'}'),
-                            onConfirm: () {
-                              Navigator.of(context).pop(); // dialog
-                              Navigator.of(context).pop(); // register screen
-                            },
-                          );
-                        } else {
-                          ErrorUtils.showSimpleInfoDialog(
-                            context,
-                            icon: Icons.error_outline,
-                            color: Colors.red,
-                            content: Text(
-                                '${res['Message'] ?? 'Registration Failed'}'),
-                            onConfirm: () {
-                              Navigator.of(context).pop();
-                            },
-                          );
-                        }
-                      } else {
-                        ErrorUtils.showSimpleInfoDialog(
-                          context,
-                          icon: Icons.error_outline,
-                          color: Colors.red,
-                          content: const Text('Server Error'),
-                          onConfirm: () {
-                            Navigator.of(context).pop();
-                          },
-                        );
-                      }
-                    } catch (e, stackTrace) {
-                      if (Navigator.canPop(context)) {
-                        Navigator.of(context).pop();
-                      }
-
-                      print("❌ Register Error: $e");
-                      print("❌ Stack: $stackTrace");
-
-                      ErrorUtils.showErrorSnackBar(
-                          "Something went wrong: ${e.toString()}");
-                    }
-                  },
-                  text: 'Submit',
+                  onPressed: () => _handleSubmit(provider),
+                  text: 'Submit / जमा करें',
                 ),
                 AppTheme.verticalSpacing(mul: 4),
               ],
@@ -637,6 +709,7 @@ else
   }
 }
 
+// QR Screen (unchanged)
 class QrScreen extends StatefulWidget {
   const QrScreen({super.key});
 
@@ -647,16 +720,15 @@ class QrScreen extends StatefulWidget {
 class _QrScreenState extends State<QrScreen> {
   @override
   void initState() {
-    // TODO: implement initState
-
+    super.initState();
     context.read<LoginProvider>().getQRInstruction();
     context.read<LoginProvider>().getQrCode();
-    super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
     var provider = Provider.of<LoginProvider>(context);
+    
     return Scaffold(
       appBar: AppBar(),
       body: Container(
@@ -666,24 +738,14 @@ class _QrScreenState extends State<QrScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Image.network(provider.qrCode),
               AppTheme.verticalSpacing(mul: 3),
               CustomElevatedBtn(
-                  onPressed: () {
-                    context.pushNamed(AppPages.register);
-                  },
-                  text: 'Go to register page'),
+                onPressed: () {
+                  context.pushNamed(AppPages.register);
+                },
+                text: 'Go to register page',
+              ),
               AppTheme.verticalSpacing(mul: 3),
-              // Container(
-              //   height: 50.0 * provider.qrInstructionList.length,
-              //   child: ListView.builder(
-              //     itemCount: provider.qrInstructionList.length,
-              //     itemBuilder: (context, index) => Text(
-              //       '* ${provider.qrInstructionList[index].instruction}',
-              //       textAlign: TextAlign.left,
-              //     ),
-              //   ),
-              // )
             ],
           ),
         ),
